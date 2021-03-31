@@ -17,22 +17,19 @@ biomodModelling <- function(species, round.code){
         # Load environmental layers (present and future) ----
         source("functions/varload.r")
         env <- var.load(folder = "crop_layers/", layers = "env_layers.txt")
-        env <- dropLayer(env, "BO21_lightbotmax_bdmax")
+        #env <- dropLayer(env, "BO21_lightbotmax_bdmax")
         
-        # r26 <-
-        #         Varload(folder = "proj_layers/rcp26/2100/",
-        #                 layers = "env_layers.txt",
-        #                 bath = "2_200")
-        # 
-        # r45 <-
-        #         Varload(folder = "proj_layers/rcp45/2100/",
-        #                 layers = "env_layers.txt",
-        #                 bath = "2_200")
-        # 
-        # r85 <-
-        #         Varload(folder = "proj_layers/rcp85/2100/",
-        #                 layers = "env_layers.txt",
-        #                 bath = "2_200")
+        r26 <-
+                var.load(folder = "proj_layers/ssp126/",
+                        layers = "env_layers.txt")
+
+        r45 <-
+                var.load(folder = "proj_layers/ssp245/",
+                        layers = "env_layers.txt")
+
+        r85 <-
+                var.load(folder = "proj_layers/ssp585/",
+                        layers = "env_layers.txt")
         
         
         # Define modelling parameters ----
@@ -173,45 +170,45 @@ biomodModelling <- function(species, round.code){
         
         # Projection in future conditions ----
         # Create a function that make ensemble and projection in the future
-        # futureProj <- function(scenario){
-        #         
-        #         if(scenario == "rcp26"){
-        #                 fut.env <- r26
-        #         }
-        #         if(scenario == "rcp45"){
-        #                 fut.env <- r45
-        #         }
-        #         if(scenario == "rcp85"){
-        #                 fut.env <- r85
-        #         }
-        #         
-        #         
-        #         # Ensemble projection in future condition
-        #         biomod.proj.fut <- BIOMOD_Projection(
-        #                 modeling.output = biomod.model.out,
-        #                 new.env = fut.env,
-        #                 proj.name = paste(scenario, pn, sep = "_"),
-        #                 selected.models = sel.models,
-        #                 binary.meth = 'TSS',
-        #                 compress = F,
-        #                 build.clamping.mask = F,
-        #                 do.stack = F,
-        #                 output.format = '.img',
-        #                 on_0_1000 = T
-        #         )
-        #         
-        #         # Ensemble Forecasting
-        #         biomod.ens.proj <-
-        #                 BIOMOD_EnsembleForecasting(
-        #                         projection.output = biomod.proj.fut,
-        #                         EM.output = biomod.ensemble,
-        #                         output.format = '.img',
-        #                         on_0_1000 = T
-        #                 )
-        # }
-        # 
+        futureProj <- function(scenario){
+
+                if(scenario == "ssp126"){
+                        fut.env <- r26
+                }
+                if(scenario == "ssp245"){
+                        fut.env <- r45
+                }
+                if(scenario == "ssp585"){
+                        fut.env <- r85
+                }
+
+
+                # Ensemble projection in future condition
+                biomod.proj.fut <- BIOMOD_Projection(
+                        modeling.output = biomod.model.out,
+                        new.env = fut.env,
+                        proj.name = paste(scenario, pn, sep = "_"),
+                        selected.models = sel.models,
+                        binary.meth = 'TSS',
+                        compress = F,
+                        build.clamping.mask = F,
+                        do.stack = F,
+                        output.format = '.img',
+                        on_0_1000 = T
+                )
+
+                # Ensemble Forecasting
+                biomod.ens.proj <-
+                        BIOMOD_EnsembleForecasting(
+                                projection.output = biomod.proj.fut,
+                                EM.output = biomod.ensemble,
+                                output.format = '.img',
+                                on_0_1000 = T
+                        )
+        }
+
         # # Apply for all scenarios
-        # lapply(c("rcp26", "rcp45", "rcp85"), futureProj)
+        lapply(c("ssp126", "ssp245", "ssp585"), futureProj)
         
         # Save model evaluations in CSV format ----
         

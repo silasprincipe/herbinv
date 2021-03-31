@@ -19,7 +19,7 @@ blockGen <- function(species.vector){
         env <-
                 var.load(folder = "crop_layers/",
                         layers = "env_layers.txt")
-        env <- dropLayer(env, "BO21_lightbotmax_bdmax")
+        #env <- dropLayer(env, "BO21_lightbotmax_bdmax")
         
         
         # Establish the best block size ----
