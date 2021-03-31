@@ -1,12 +1,7 @@
-###### Reef-builders modelling #######
-#Silas C. Principe - 2020
-#silasprincipe@yahoo.com.br
+#### Modelling of coral reef herbivorous invertebrates ####
+## Silas C. Principe - silasprincipe@yahoo.com.br - 2021
 
 #### Preparing environmental layers #####
-
-### Note: Wind Layer have to be prepared previously using wind_layer_prep.R
-### Here in this data package, the edited wind layer is already provided.
-
 
 library(sdmpredictors)
 library(dplyr)

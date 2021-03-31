@@ -1,7 +1,9 @@
-#### Modelling of Herbivorous invertebrates of coral reefs ####
-## Silas C. Principe - silasprincipe@yahoo.com.br - 2020
+#### Modelling of coral reef herbivorous invertebrates ####
+## Silas C. Principe - silasprincipe@yahoo.com.br - 2021
 
 ### Sea-urchins data conversion to 1 per cell - NOAA version ###
+# This data will be used in GEE for other part of the work
+# It uses as base the OISST data from NOAA in 0.25° resolution
 
 # Load packages ----
 library(tidyverse)

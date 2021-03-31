@@ -1,5 +1,5 @@
-#### Modelling of Herbivorous invertebrates of coral reefs ####
-## Silas C. Principe - silasprincipe@yahoo.com.br - 2020
+#### Modelling of coral reef herbivorous invertebrates ####
+## Silas C. Principe - silasprincipe@yahoo.com.br - 2021
 
 #### Bathymetry Layer preparation #####
 
