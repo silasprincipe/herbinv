@@ -1,0 +1,7 @@
+"1" "BO21_tempmean_ss"
+"2" "BO21_salinitymin_ss"
+"3" "BO21_lightbotmax_bdmax"
+"4" "BO_ph"
+"5" "BO21_chlomean_ss"
+"6" "BO21_silicatemean_ss"
+"7" "BO21_dissoxmin_ss"
