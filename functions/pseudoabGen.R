@@ -36,8 +36,8 @@ pseudoabGen <- function(species){
         sp <- read.csv(paste(path, species, "_cell.csv", sep = ""))
         
         #Define quantity of PA
-        #pa.qt = 10
-        pa.qt = 2
+        pa.qt = 10
+        #pa.qt = 2
         
         # Separate species data into presences and absences
         sp.p <- sp[sp[, 3] == 1, 1:2]

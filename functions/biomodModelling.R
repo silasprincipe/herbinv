@@ -35,7 +35,7 @@ biomodModelling <- function(species, round.code){
         # Define modelling parameters ----
         
         # Algorithms to use
-        models <- c("RF", "GBM", "GLM")
+        models <- c("RF", "GBM", "GLM", "GAM")
         
         # Variable importance permutation number
         vimp <- 20

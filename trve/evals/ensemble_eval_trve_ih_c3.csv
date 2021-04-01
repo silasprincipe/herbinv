@@ -1,0 +1,7 @@
+"Model.name","Eval.metric","Testing.data","Evaluating.data","Cutoff","Sensitivity","Specificity"
+"EMcaByTSS_mergedAlgo_mergedRun_mergedData","KAPPA",1,NA,828,100,100
+"EMcaByTSS_mergedAlgo_mergedRun_mergedData","TSS",1,NA,828,100,100
+"EMcaByTSS_mergedAlgo_mergedRun_mergedData","ROC",1,NA,833.5,100,100
+"EMwmeanByTSS_mergedAlgo_mergedRun_mergedData","KAPPA",0.986,NA,656,97.5,100
+"EMwmeanByTSS_mergedAlgo_mergedRun_mergedData","TSS",0.99,NA,475,100,99
+"EMwmeanByTSS_mergedAlgo_mergedRun_mergedData","ROC",1,NA,478,100,99.125
