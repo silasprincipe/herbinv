@@ -95,7 +95,8 @@ blockGen <- function(species.vector){
                 #save index for BIOMOD Tuning (if needed - not used on our case)
                 write.table(sb$foldID,
                             paste("data/", species, "/", species,
-                                  "_foldindex.csv", sep = ""))
+                                  "_foldindex.csv", sep = ""),
+                            row.names = F)
                 
                 
                 cat(species, "blocking done!", "\n")

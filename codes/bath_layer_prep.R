@@ -38,19 +38,29 @@ bath.2_100 <-
     }
   )
 
+
+
 # Adjust resolution
-bath.2_100 <- aggregate(bath.2_100, fact = 20, fun = mean)
+bath.2_100.no <- aggregate(bath.2_100, fact = 20, fun = mean)
+
+# Adjust resolution for NOAA-OISST
+bath.2_100.oi <- aggregate(bath.2_100, fact = 60, fun = mean)
 
 # Mask in the selected area
-m2_100 <- mask(bath.2_100, sel.area)
+m2_100.no <- mask(bath.2_100.no, sel.area)
+m2_100.oi <- mask(bath.2_100.oi, sel.area)
 
 # Plot to verify
-plot(m2_100)
+plot(m2_100.no)
+plot(m2_100.oi)
 
 # Write final rasters
 
-writeRaster(m2_100, filename = "data/env/bath_layers/bath_2_100.tif",
+writeRaster(m2_100.no, filename = "data/env/bath_layers/bath_2_100.tif",
             overwrite = T)
 
+
+writeRaster(m2_100.oi, filename = "data/env/bath_layers/bath_2_100_oisst.tif",
+            overwrite = T)
 
 ###END
