@@ -21,14 +21,7 @@ env <- rotate(env)
 
 plot(env)
 
-bath <- raster("data/env/bath_layers/bath_2_100.tif")
-
-bath <- aggregate(bath, fact = 3)
-
-bath <- calc(bath, function(x){
-        x[x < -60] <- NA
-        x
-})
+bath <- raster("data/env/bath_layers/bath_2_100_oisst.tif")
 
 env <- crop(env, bath)
 env <- mask(env, bath)
@@ -47,9 +40,7 @@ to.cell <- function(species){
         rm(sp2, out.p)
         
         #Create a clean raster
-        r <- raster(nrow=1020, ncol=1452,
-                    xmn = -99, xmx= 22,
-                    ymn= -42.5, ymx = 42.5)
+        r <- env
         values(r) <- NA
         
         #Put 1 in presence cells

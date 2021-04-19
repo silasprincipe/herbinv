@@ -1,5 +1,21 @@
+#### Modelling of coral reef herbivorous invertebrates ####
+## Silas C. Principe - silasprincipe@yahoo.com.br - 2021
+
+### Extract max and min temperature experience by sea urchins ###
+# Here we use daily data obtained from GEE (extract for each presence point)
+# to establish three main data:
+# 1) mean +- SD temperature experienced in the coldest presence point
+# 2) mean +- SD temperature experienced in the hottest presence point
+# 3) time that those temperatures are experienced (hot+SD; cold-SD) during the
+# time span being used here.
+
+# Whit this data we can project areas that are suitable (according to this time
+# threshold) now and in the future.
+
+# Load libraries ----
 library(tidyverse)
 
+# Create a function that can be applied in all species ----
 getThresholds <- function(species){
         
         # Load data from GEE. For each presence point we got daily SST data
@@ -25,7 +41,7 @@ getThresholds <- function(species){
                 separate("month_day", into = c("month", "day"), sep = 2)
         
         # We remove years 2021 and 1981 for which data is incomplete
-        tdata <- filter(tdata, year < 2021 & year > 1981)
+        #tdata <- filter(tdata, year < 2021 & year > 1981)
         
         # Correct the code column
         tdata$code <- as.factor(tdata$code)
@@ -46,6 +62,7 @@ getThresholds <- function(species){
         
         # Extract data for just the points where there is the maximum and
         # minimum mean temperatures (hottest and coolest points)
+        # when more points are returned we just get the first
         max.sp <- tdata.mm[which(tdata.mm$mean_max == max(tdata.mm$mean_max)),][1,]
         min.sp <- tdata.mm[which(tdata.mm$mean_min == min(tdata.mm$mean_min)),][1,]
         
@@ -91,24 +108,17 @@ getThresholds <- function(species){
         all.data
 }
 
+# Get thresholds for all species -----
+# This may take sometime
 thresholds <- lapply(c("eclu", "lyva", "trve"), getThresholds)
 
+# Change names to easy handling
 names(thresholds) <- c("eclu", "lyva", "trve")
 
+# Access individual data
 thresholds$eclu
 
+# Save as RDS file with all data
+saveRDS(thresholds, "data/oisst/allspecies_oisst_thvalues.rds")
 
-#teste <- tdata$.geo[1]
-
-#str_view(teste, c("(\\[.[:digit:]*\\.[:digit:]*,[:digit:]*\\.[:digit:]*\\])"), match = TRUE)
-
-tdata2 <- tdata2 %>% separate("date", into = c("year", "month_day"),
-                              sep = c(4))
-
-tdata2 <- tdata2 %>% group_by(year) %>% summarise(mean = mean(mean))
-tdata2$all <- "a"
-
-
-ggplot(tdata2[tdata2$year >= 1995 & tdata2$year < 2021,])+geom_smooth(aes(y = mean, x = year, group = all),
-                                                                      method  = 'lm')+
-        geom_point(aes(y = mean, x = year))
+### END
