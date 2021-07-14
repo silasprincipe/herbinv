@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/no3os/no3os_gfdl_ssp370_mean_ac.nc" 0.000155461616857191 0.000704912262809271 29655

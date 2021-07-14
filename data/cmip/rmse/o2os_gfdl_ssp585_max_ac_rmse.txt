@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/o2os/o2os_gfdl_ssp585_max_ac.nc" 0.00132582996757067 0.0025478205373786 29655

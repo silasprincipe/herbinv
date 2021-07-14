@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/tos/tos_cesm_ssp585_mean_ac.nc" 0.0252361512962898 0.0552453061062915 27361

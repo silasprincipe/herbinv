@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/o2os/o2os_gfdl_ssp126_max_ac.nc" 0.00121593516745178 0.00155627507909638 29655

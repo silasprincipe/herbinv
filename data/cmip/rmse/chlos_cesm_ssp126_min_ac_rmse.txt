@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/chlos/chlos_cesm_ssp126_min_ac.nc" 1.01306347129865e-08 2.50525727217405e-08 27361

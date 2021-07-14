@@ -1,27 +1,16 @@
-                       BO21_tempmean_ss BO21_salinitymean_ss BO21_salinitymin_ss
-BO21_tempmean_ss             1.00000000            0.1922440          0.03140143
-BO21_salinitymean_ss         0.19224398            1.0000000          0.88046149
-BO21_salinitymin_ss          0.03140143            0.8804615          1.00000000
-BO21_lightbotmax_bdmax       0.24228564            0.0202222          0.07500515
-BO_ph                       -0.16924176            0.4114999          0.66972392
-BO21_chlomean_ss            -0.51522195           -0.5869343         -0.54207846
-BO21_silicatemean_ss         0.08346549           -0.8170047         -0.76464809
-BO21_dissoxmin_ss           -0.86449076           -0.3970314         -0.25785861
-                       BO21_lightbotmax_bdmax       BO_ph BO21_chlomean_ss
-BO21_tempmean_ss                   0.24228564 -0.16924176       -0.5152219
-BO21_salinitymean_ss               0.02022220  0.41149993       -0.5869343
-BO21_salinitymin_ss                0.07500515  0.66972392       -0.5420785
-BO21_lightbotmax_bdmax             1.00000000  0.09506469       -0.1446021
-BO_ph                              0.09506469  1.00000000       -0.3165588
-BO21_chlomean_ss                  -0.14460213 -0.31655880        1.0000000
-BO21_silicatemean_ss               0.07360566 -0.36017874        0.3072096
-BO21_dissoxmin_ss                 -0.25325005 -0.03093795        0.6104026
+                       BO21_tempmean_ss BO21_salinitymean_ss BO21_lightbotmax_bdmax       BO_ph BO21_chlomean_ss
+BO21_tempmean_ss             1.00000000          0.174204642            0.259578147 -0.17124649       -0.4881701
+BO21_salinitymean_ss         0.17420464          1.000000000           -0.007308308  0.43351371       -0.6048841
+BO21_lightbotmax_bdmax       0.25957815         -0.007308308            1.000000000  0.08286343       -0.1397298
+BO_ph                       -0.17124649          0.433513714            0.082863428  1.00000000       -0.3408477
+BO21_chlomean_ss            -0.48817009         -0.604884050           -0.139729833 -0.34084773        1.0000000
+BO21_silicatemean_ss         0.09616409         -0.828762698            0.093098524 -0.39753752        0.3298293
+BO21_dissoxmin_ss           -0.86901029         -0.394369742           -0.253444155 -0.02403908        0.5981302
                        BO21_silicatemean_ss BO21_dissoxmin_ss
-BO21_tempmean_ss                 0.08346549       -0.86449076
-BO21_salinitymean_ss            -0.81700466       -0.39703135
-BO21_salinitymin_ss             -0.76464809       -0.25785861
-BO21_lightbotmax_bdmax           0.07360566       -0.25325005
-BO_ph                           -0.36017874       -0.03093795
-BO21_chlomean_ss                 0.30720964        0.61040260
-BO21_silicatemean_ss             1.00000000        0.07116062
-BO21_dissoxmin_ss                0.07116062        1.00000000
+BO21_tempmean_ss                 0.09616409       -0.86901029
+BO21_salinitymean_ss            -0.82876270       -0.39436974
+BO21_lightbotmax_bdmax           0.09309852       -0.25344415
+BO_ph                           -0.39753752       -0.02403908
+BO21_chlomean_ss                 0.32982927        0.59813025
+BO21_silicatemean_ss             1.00000000        0.07629302
+BO21_dissoxmin_ss                0.07629302        1.00000000

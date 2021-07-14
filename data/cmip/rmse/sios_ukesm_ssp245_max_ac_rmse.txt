@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/sios/sios_ukesm_ssp245_max_ac.nc" 9.36581736883478e-05 0.000163490892120115 24110

@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/o2os/o2os_ukesm_ssp126_max_ac.nc" 0.000377439958158328 0.000890527371006354 24110

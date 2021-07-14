@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/tos/tos_ipsl_ssp370_min_ac.nc" 0.172807670149249 0.28282312105526 22230

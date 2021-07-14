@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/tos/tos_gfdl_ssp245_min_ac.nc" 0.130944269565117 0.277241261721478 25572

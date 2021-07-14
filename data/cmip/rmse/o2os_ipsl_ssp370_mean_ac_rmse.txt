@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/o2os/o2os_ipsl_ssp370_mean_ac.nc" 0.000255197183739788 0.000487939501115681 22230

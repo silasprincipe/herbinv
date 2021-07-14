@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/no3os/no3os_ipsl_ssp370_min_ac.nc" 5.92173595782667e-05 0.0001267868449377 22230

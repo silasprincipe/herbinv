@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/no3os/no3os_cesm_ssp245_mean_ac.nc" 1.86283370525614e-05 5.46396392946e-05 27361

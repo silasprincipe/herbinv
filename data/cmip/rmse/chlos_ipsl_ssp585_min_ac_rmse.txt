@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/chlos/chlos_ipsl_ssp585_min_ac.nc" 6.84714870660494e-06 1.2671367742903e-05 22230

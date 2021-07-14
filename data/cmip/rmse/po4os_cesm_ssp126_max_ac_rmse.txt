@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/po4os/po4os_cesm_ssp126_max_ac.nc" 4.58409475449593e-06 8.11882215578876e-06 27361

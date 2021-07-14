@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/chlos/chlos_ukesm_ssp126_mean_ac.nc" 1.58838717717368e-09 3.02729509210474e-09 24110

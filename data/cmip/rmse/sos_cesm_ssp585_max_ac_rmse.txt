@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/sos/sos_cesm_ssp585_max_ac.nc" 0.0248280511326163 0.0815255261318489 27361

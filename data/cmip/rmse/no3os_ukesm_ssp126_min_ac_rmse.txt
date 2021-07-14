@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/no3os/no3os_ukesm_ssp126_min_ac.nc" 8.15393257737633e-05 4.11169009599335e-05 24110

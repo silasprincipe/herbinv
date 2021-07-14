@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/tos/tos_gfdl_ssp585_max_ac.nc" 0.0814599341816185 0.152798992651074 25572

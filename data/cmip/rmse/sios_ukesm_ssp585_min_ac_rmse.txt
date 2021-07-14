@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/sios/sios_ukesm_ssp585_min_ac.nc" 8.7882728933039e-05 0.000143553569400237 24110

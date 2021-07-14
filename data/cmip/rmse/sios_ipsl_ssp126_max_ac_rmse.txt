@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/sios/sios_ipsl_ssp126_max_ac.nc" 0.000155417535674965 0.000691584960138114 22230

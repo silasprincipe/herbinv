@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/tos/tos_cesm_ssp126_max_ac.nc" 0.0299809922434564 0.0487071917077316 27361

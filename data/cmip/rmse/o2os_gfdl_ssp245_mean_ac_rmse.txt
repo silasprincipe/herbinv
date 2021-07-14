@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/o2os/o2os_gfdl_ssp245_mean_ac.nc" 0.000413327827077438 0.000723094511802886 29655

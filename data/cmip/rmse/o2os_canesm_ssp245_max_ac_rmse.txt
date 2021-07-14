@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/o2os/o2os_canesm_ssp245_max_ac.nc" 0.000515251011429647 0.000615792435625925 23497

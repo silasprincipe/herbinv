@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/sos/sos_ipsl_ssp126_min_ac.nc" 0.249698576970859 0.556841583960651 22230

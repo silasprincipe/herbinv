@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/po4os/po4os_gfdl_ssp245_mean_ac.nc" 5.03490044309009e-06 8.02514361904875e-06 29655

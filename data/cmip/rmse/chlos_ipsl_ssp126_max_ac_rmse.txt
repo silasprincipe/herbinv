@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/chlos/chlos_ipsl_ssp126_max_ac.nc" 7.26975889181012e-05 0.000204201812713433 22230

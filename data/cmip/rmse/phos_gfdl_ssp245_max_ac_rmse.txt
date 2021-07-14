@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/phos/phos_gfdl_ssp245_max_ac.nc" 0.00259913526565952 0.0080772223083951 29655

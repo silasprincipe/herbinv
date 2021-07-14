@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/po4os/po4os_gfdl_ssp370_min_ac.nc" 1.43631588821189e-05 5.75586140395253e-06 29655

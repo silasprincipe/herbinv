@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/phos/phos_cesm_ssp245_min_ac.nc" 0.00100936730846029 0.00137304693689309 27361

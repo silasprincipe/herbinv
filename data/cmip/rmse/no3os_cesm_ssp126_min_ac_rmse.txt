@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/no3os/no3os_cesm_ssp126_min_ac.nc" 2.51811138544642e-05 3.20956017414015e-05 27361

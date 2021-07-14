@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/tos/tos_ipsl_ssp585_max_ac.nc" 0.0943458871210782 0.191536161920613 22230

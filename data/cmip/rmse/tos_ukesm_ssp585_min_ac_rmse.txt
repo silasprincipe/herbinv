@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/tos/tos_ukesm_ssp585_min_ac.nc" 0.100433595087187 0.198734433596401 24110

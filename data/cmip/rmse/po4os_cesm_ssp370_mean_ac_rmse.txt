@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/po4os/po4os_cesm_ssp370_mean_ac.nc" 1.08543662894898e-06 4.04729822609997e-06 27361

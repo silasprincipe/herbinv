@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/chlos/chlos_gfdl_ssp126_min_ac.nc" 1.03211998606112e-08 1.66151859218565e-08 29655

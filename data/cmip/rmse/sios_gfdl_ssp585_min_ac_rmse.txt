@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/sios/sios_gfdl_ssp585_min_ac.nc" 7.20092285950776e-05 0.000145186723628603 29655

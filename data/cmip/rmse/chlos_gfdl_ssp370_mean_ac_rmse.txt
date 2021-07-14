@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/chlos/chlos_gfdl_ssp370_mean_ac.nc" 2.18401235018652e-08 3.1017918096725e-08 29655

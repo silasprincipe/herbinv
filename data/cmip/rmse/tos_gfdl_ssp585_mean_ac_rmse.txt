@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/tos/tos_gfdl_ssp585_mean_ac.nc" 0.0671855984878097 0.138849447630967 25572
