@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/sios/sios_cesm_ssp245_max_ac.nc" 0.00012046742821898 0.000408154216671091 27361

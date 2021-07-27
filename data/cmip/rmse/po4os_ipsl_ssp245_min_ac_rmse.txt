@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/po4os/po4os_ipsl_ssp245_min_ac.nc" 4.110236883441e-06 6.43846866570488e-06 22230

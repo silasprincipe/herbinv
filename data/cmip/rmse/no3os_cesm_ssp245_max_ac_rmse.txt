@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/no3os/no3os_cesm_ssp245_max_ac.nc" 9.69387378277983e-05 0.000172366199091597 27361

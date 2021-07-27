@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/sos/sos_cesm_ssp245_mean_ac.nc" 0.00821257206695906 0.0513950133300965 27361

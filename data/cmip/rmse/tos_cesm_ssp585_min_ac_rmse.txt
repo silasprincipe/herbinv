@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/tos/tos_cesm_ssp585_min_ac.nc" 0.0500104796315395 0.101609031894031 27361

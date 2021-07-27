@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/phos/phos_gfdl_ssp126_min_ac.nc" 0.00359391078066611 0.00216246443155501 29655

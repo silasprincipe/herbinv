@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/phos/phos_gfdl_ssp245_mean_rc.nc" 9.7743306943538e-05 0.000366650105623489 29655

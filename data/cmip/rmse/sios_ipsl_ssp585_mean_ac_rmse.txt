@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/sios/sios_ipsl_ssp585_mean_ac.nc" 2.09276995284178e-05 0.000113082261954578 22230

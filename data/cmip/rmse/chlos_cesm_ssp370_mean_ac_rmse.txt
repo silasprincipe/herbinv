@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/chlos/chlos_cesm_ssp370_mean_ac.nc" 1.96852254836255e-08 5.84097635387008e-08 27361

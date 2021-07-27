@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/po4os/po4os_gfdl_ssp126_min_ac.nc" 1.00088927040047e-05 4.42837062005034e-06 29655

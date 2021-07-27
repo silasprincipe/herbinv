@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/o2os/o2os_canesm_ssp245_min_ac.nc" 0.00050185117615461 0.000389051307448602 23497

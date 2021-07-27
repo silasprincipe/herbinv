@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/phos/phos_cesm_ssp370_mean_ac.nc" 0.000394827239008348 0.00139073034448009 27361

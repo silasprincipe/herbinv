@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/sos/sos_ukesm_ssp245_min_ac.nc" 0.127615725666095 0.237439816525065 24110

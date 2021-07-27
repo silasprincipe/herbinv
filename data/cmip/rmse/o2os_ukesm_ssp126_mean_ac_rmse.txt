@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/o2os/o2os_ukesm_ssp126_mean_ac.nc" 0.000107523396685172 0.00029669735149912 24110

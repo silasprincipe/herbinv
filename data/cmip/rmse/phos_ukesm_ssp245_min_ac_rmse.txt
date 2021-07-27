@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/phos/phos_ukesm_ssp245_min_ac.nc" 0.00348238762238524 0.00213384725830159 24110

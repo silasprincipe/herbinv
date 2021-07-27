@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/po4os/po4os_gfdl_ssp585_max_ac.nc" 2.47954285535305e-05 2.64158424132342e-05 29655

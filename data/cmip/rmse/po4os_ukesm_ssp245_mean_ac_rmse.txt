@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/po4os/po4os_ukesm_ssp245_mean_ac.nc" 2.49842008511846e-06 5.84742647265667e-06 24110

@@ -1,0 +1,2 @@
+"file" "rmse" "rmse_base" "cell_number"
+"models_edited/no3os/no3os_cesm_ssp370_mean_rc.nc" 0.32581189452278 1.00557168490388 27361

@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/no3os/no3os_gfdl_ssp126_min_ac.nc" 0.000153526843248873 0.00010650406290388 29655

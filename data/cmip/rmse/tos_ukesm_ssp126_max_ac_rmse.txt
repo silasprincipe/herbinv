@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/tos/tos_ukesm_ssp126_max_ac.nc" 0.0590688854957548 0.0856678393056131 24110

@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/sios/sios_cesm_ssp370_min_ac.nc" 8.52029481560643e-05 0.000232022934626947 27361

@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/sios/sios_ipsl_ssp126_min_ac.nc" 3.53600176308895e-05 6.86540656084221e-05 22230

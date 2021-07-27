@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/phos/phos_ipsl_ssp126_mean_ac.nc" 0.00059303795581168 0.000726876550261815 22230

@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/sios/sios_gfdl_ssp370_max_ac.nc" 0.000215608180273794 0.00031893746790775 29655

@@ -15,16 +15,20 @@ source("functions/Varload.r")
 env <- var.load(folder = "crop_layers/", layers = "env_layers.txt",
                bath = "2_100")
 
-r26 <-
-        var.load(folder = "proj_layers/rcp26/2100/", layers = "env_layers.txt",
+r12 <-
+        var.load(folder = "proj_layers/ssp126/", layers = "env_layers.txt",
                 bath = "2_100")
 
-r45 <-
-        var.load(folder = "proj_layers/rcp45/2100/", layers = "env_layers.txt",
+r24 <-
+        var.load(folder = "proj_layers/ssp245/", layers = "env_layers.txt",
+                 bath = "2_100")
+
+r37 <-
+        var.load(folder = "proj_layers/ssp370/", layers = "env_layers.txt",
                 bath = "2_100")
 
 r85 <-
-        var.load(folder = "proj_layers/rcp85/2100/", layers = "env_layers.txt",
+        var.load(folder = "proj_layers/ssp585/", layers = "env_layers.txt",
                 bath = "2_100")
 
 
@@ -37,7 +41,7 @@ set.seed(2932)
 sp.codes <- c("eclu", "lyva", "trve")
 
 # Algorithms to use
-models <- c("RF", "GBM", "GLM", "MAXENT.Phillips", "GAM")
+models <- c("RF", "GBM", "GLM")
 
 # Variable importance permutation number
 vimp <- 20
@@ -92,8 +96,9 @@ biomodModel <- function(species){
         
         
         #Set options
-        cat(t.opt[[species]][[1]],"options being used.", "\n")
-        biomod.options <- t.opt[[species]][[2]]
+        #cat(t.opt[[species]][[1]],"options being used.", "\n")
+        #biomod.options <- t.opt[[species]][[2]]
+        biomod.options <- BIOMOD_ModelingOptions()
         
         ##### Run modeling #####
         biomod.model.out <- BIOMOD_Modeling(
@@ -180,13 +185,16 @@ biomodModel <- function(species){
         ###### Projection in future conditions #####
         futureProj <- function(scenario){
                 
-                if(scenario == "rcp26"){
-                        fut.env <- r26
+                if(scenario == "ssp126"){
+                        fut.env <- r12
                 }
-                if(scenario == "rcp45"){
-                        fut.env <- r45
+                if(scenario == "ssp245"){
+                        fut.env <- r24
                 }
-                if(scenario == "rcp85"){
+                if(scenario == "ssp370"){
+                        fut.env <- r37
+                }
+                if(scenario == "ssp585"){
                         fut.env <- r85
                 }
                 
@@ -215,7 +223,7 @@ biomodModel <- function(species){
                         )
         }
         
-        lapply(c("rcp26", "rcp45", "rcp85"), futureProj)
+        lapply(c("ssp126", "ssp245", "ssp370", "ssp585"), futureProj)
         
         ### Get evaluations in CSV format
         # get all models evaluation

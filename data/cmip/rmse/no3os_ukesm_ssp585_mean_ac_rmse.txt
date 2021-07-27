@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/no3os/no3os_ukesm_ssp585_mean_ac.nc" 5.52311444544032e-05 0.000159687670759289 24110

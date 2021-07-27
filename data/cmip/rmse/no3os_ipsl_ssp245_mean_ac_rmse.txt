@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/no3os/no3os_ipsl_ssp245_mean_ac.nc" 3.05561840675717e-05 5.92853811392368e-05 22230

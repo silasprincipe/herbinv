@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/phos/phos_ukesm_ssp370_mean_ac.nc" 0.000669604880587407 0.00173289426353451 24110

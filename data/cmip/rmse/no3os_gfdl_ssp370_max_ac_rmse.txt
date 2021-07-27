@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/no3os/no3os_gfdl_ssp370_max_ac.nc" 0.000742229637988827 0.00151401601327714 29655

@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/sos/sos_ukesm_ssp126_mean_ac.nc" 0.013569243805166 0.0340411268762587 24110

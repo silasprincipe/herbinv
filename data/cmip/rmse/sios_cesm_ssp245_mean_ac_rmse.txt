@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/sios/sios_cesm_ssp245_mean_ac.nc" 2.65294457992807e-05 0.000144410584224777 27361

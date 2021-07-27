@@ -27,8 +27,8 @@ codes <- c("BO21_tempmean_ss",
            "BO21_tempmax_ss",
            "BO21_salinitymean_ss",
            "BO21_salinitymin_ss",
-           "BO21_lightbotmean_bdmax",
-           "BO21_lightbotmax_bdmax",
+           "BO21_lightbotmean_bdmean",
+           "BO21_lightbotmax_bdmean",
            "BO_ph",
            "BO21_chlomean_ss",
            "BO21_chlomax_ss",
@@ -85,10 +85,13 @@ names(env.2)
 
 env.3 <- dropLayer(env.2,
                    c(
-                     "BO21_salinitymean_ss"
+                     "BO21_salinitymin_ss"
                      ))
 
 names(env.3)
+
+env.3 <- dropLayer(env.3, "BO21_dissoxmin_ss")
+env.3 <- stack(env.3, env$BO21_dissoxmean_ss)
 
 #We can make another vifstep verification
 vifstep.env3 <- vifstep(env.3, th = 10)

@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/o2os/o2os_ipsl_ssp370_min_ac.nc" 0.00130000007913327 0.00135056036419678 22230

@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/sios/sios_gfdl_ssp245_mean_ac.nc" 5.49956584437938e-05 7.01351764194661e-05 29655

@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/sos/sos_ukesm_ssp585_max_ac.nc" 0.0373755865808271 0.0733880990202379 24110

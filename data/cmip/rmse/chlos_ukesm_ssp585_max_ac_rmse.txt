@@ -1,2 +1,0 @@
-"file" "rmse" "rmse_base" "cell_number"
-"models_edited/chlos/chlos_ukesm_ssp585_max_ac.nc" 1.3039807425544e-08 2.48614491385956e-08 24110
