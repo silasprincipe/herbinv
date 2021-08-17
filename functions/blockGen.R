@@ -99,6 +99,36 @@ blockGen <- function(species.vector){
                             row.names = F)
                 
                 
+                ### latitudinal
+                
+                sbl <- spatialBlock(
+                        speciesData = pa_data,
+                        species = "occ",
+                        rasterLayer = env,
+                        rows = 20,
+                        k = 5,
+                        selection = "systematic",
+                        biomod2Format = TRUE,
+                        showBlocks = F
+                )
+                
+                #Create a file with the split table for BIOMOD2
+                split.table <- as.data.frame(sbl$biomodTable)
+                
+                #Save split table
+                write.csv(
+                        split.table,
+                        paste("data/", species, "/", species,
+                              "_splittable_lat.csv", sep = ""),
+                        row.names = F
+                )
+                
+                #save index for BIOMOD Tuning (if needed - not used on our case)
+                write.table(sbl$foldID,
+                            paste("data/", species, "/", species,
+                                  "_foldindex_lat.csv", sep = ""),
+                            row.names = F)
+                
                 cat(species, "blocking done!", "\n")
                 
                 

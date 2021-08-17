@@ -1,18 +1,7 @@
-###### Reef-builders modelling #######
-#Silas C. Principe - 2020
-#silasprincipe@yahoo.com.br
+#### Modelling of Herbivorous invertebrates of coral reefs ####
+## Silas C. Principe - silasprincipe@yahoo.com.br - 2021
 
 ### Function to generate pseudoabsences ----
-
-# For Mussismilia hispida the function generates 
-# pseudoabsences in a restricted areas
-# and in a quantity of 2x the total number of presences
-# For the other two species it generates pseudoabsences
-# in the whole area and in an amount of 10x the number of presences.
-# In both cases, pseudoabsences are generated in an area outside the 
-# area predicted as suitable by a presence only model (Mahalanobis distance). 
-# To avoid over prediction we ignore areas with small values of probability 
-# of suitability in this pre-model (less than 1%).
 
 pseudoabGen <- function(species){
         
@@ -36,16 +25,15 @@ pseudoabGen <- function(species){
         sp <- read.csv(paste(path, species, "_cell.csv", sep = ""))
         
         #Define quantity of PA
-        pa.qt = 10
-        #pa.qt = 2
+        #pa.qt = 10
+        pa.qt = 2
         
         # Separate species data into presences and absences
         sp.p <- sp[sp[, 3] == 1, 1:2]
         sp.a <- sp[sp[, 3] == 0, 1:2]
         
         # Load environmental layers
-        env <-
-                var.load(folder = "crop_layers/",
+        env <- var.load(folder = "crop_layers/",
                         layers = "env_layers.txt")
         #env <- dropLayer(env, "BO21_lightbotmax_bdmax")
         
