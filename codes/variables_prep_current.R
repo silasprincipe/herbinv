@@ -68,7 +68,7 @@ plot(bath)
 names(env)
 
 #### Colinearity verification
-vifstep.env <- vifstep(env, th = 10)
+vifstep.env <- vifstep(env, th = 5)
 
 vifstep.env
 
@@ -76,9 +76,9 @@ vifstep.env
 ### NEW COLINEARITY VERIFICATION - INCLUDING LAYERS THAT WE DECIDED ARE IMPORTANT
 
 #Exclude based on vifstep
-env.2 <- exclude(env, vifstep.env)
+env.3 <- exclude(env, vifstep.env)
 
-names(env.2)
+names(env.3)
 
 ###Now exclude variations of the same variable based on the ones
 ### that have stronger biological connection
