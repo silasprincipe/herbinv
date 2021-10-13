@@ -1,7 +1,37 @@
 #### Modelling of Herbivorous invertebrates of coral reefs ####
 ## Silas C. Principe - silasprincipe@yahoo.com.br - 2021
 
+### Virtual species modeling ###
 ### Modeling functions ###
+
+# Function to get response curves
+resp.curve <- function(model, mname, env.dat){
+        
+        results <- data.frame(matrix(nrow = 50, ncol = nrow(env.dat)))
+        
+        all.data <- results
+        
+        names(all.data) <- env.dat$var
+        
+        for (j in 1:nrow(env.dat)) {
+                all.data[,j] <- env.dat$mean[j]
+        }
+        
+        for (z in 1:nrow(env.dat)) {
+                
+                df <- all.data
+                
+                df[,z] <- seq(env.dat$min[z], env.dat$max[z], length = 50)
+                
+                results[,z] <- predict(model, df, type = "response")
+        }
+        
+        names(results) <- env.dat$var
+        
+        results$filename = mname
+        
+        results
+}
 
 # Get weigthed response function
 wt <- function(resp, prev = 0.5){
@@ -26,8 +56,7 @@ gbm.auto <- function(sp.data, weigths, blocks){
                           gbm.x = 2:length(sp.data), gbm.y = 1,
                           fold.vector = blocks, n.folds = 5,
                           site.weights = weigths,
-                          keep.fold.fit = T, plot.main = F,
-                          learning.rate = 0.05)
+                          keep.fold.fit = T)
         
         if (gbm.m$n.trees < 1000) {
                 cat("Reducing learning rate.")
@@ -38,8 +67,6 @@ gbm.auto <- function(sp.data, weigths, blocks){
                 
                 while (tn < 1000) {
                         lr <- lr/2
-                        lr <- ifelse(lr == 0.025, 0.02, lr)
-                        lr <- ifelse(lr == 0.0025, 0.002, lr)
                         
                         if (lr < 0.001) {
                                 cat("Learning rate reached less than 0.001.
@@ -52,8 +79,7 @@ gbm.auto <- function(sp.data, weigths, blocks){
                                                   fold.vector = blocks, n.folds = 5,
                                                   site.weights = weigths,
                                                   learning.rate = lr,
-                                                  keep.fold.fit = T,
-                                                  plot.main = F)
+                                                  keep.fold.fit = T)
                                 
                                 tn <- 1000
                                 
@@ -64,26 +90,30 @@ gbm.auto <- function(sp.data, weigths, blocks){
                                                   fold.vector = blocks, n.folds = 5,
                                                   site.weights = weigths,
                                                   learning.rate = lr,
-                                                  keep.fold.fit = T,
-                                                  plot.main = F)
+                                                  keep.fold.fit = T)
                                 
                                 tn <- gbm.m$n.trees
                         }
                 }
         }
         
-        cat("Final model fit with lr = ", gbm.m$shrinkage, "\n")
-        
         return(gbm.m)
 }
 
 # Function to get predictions
-pred.sdm <- function(rast, model, thresh = NULL,
-                     outfold = NULL, filenam = NULL, code = NULL){
+pred.sdm <- function(rast, model, thresh = NULL){
         
         for (j in 1:length(rast)) {
                 
                 pred <- predict(rast[[j]], model, type = "response")
+                
+                if (!is.null(thresh)) {
+                        pred <- calc(pred, function(x){
+                                x[x < thresh] <- 0
+                                x[x >= thresh] <- 1
+                                x
+                        })
+                }
                 
                 if (j == 1) {
                         outstack <- pred
@@ -94,33 +124,16 @@ pred.sdm <- function(rast, model, thresh = NULL,
         
         names(outstack) <- names(rast)
         
-        if (!is.null(outfold)) {
-                writeRaster(outstack,
-                            paste0(paste0(outfold, filenam, "_", 
-                                          tolower(code), "_"),
-                                   names(outstack), ".tif"),
-                            bylayer = T)   
-        }
-        
-        if (!is.null(thresh)) {
-                outstack <- calc(outstack, function(x){
-                        x[x < thresh] <- 0
-                        x[x >= thresh] <- 1
-                        x
-                })
-                
-                names(outstack) <- names(rast)
-                
-                if (!is.null(outfold)) {
-                        writeRaster(outstack,
-                                    paste0(paste0(outfold, filenam, "_", 
-                                                  tolower(code), "_"),
-                                           names(outstack), "_bin.tif"),
-                                    bylayer = T)   
-                }
-        }
-        
         outstack
+}
+
+# Jaccard index
+jaccard.eval <- function(rast1, rast2){
+        combination <- rast1 + rast2
+        intersection <- combination == 2
+        union <- combination >= 1
+        return(sum(rasterToPoints(intersection)[,3])/
+                       sum(rasterToPoints(union)[,3]))
 }
 
 # Metrics
@@ -151,7 +164,30 @@ model.metrics <- function(original, predicted, raster = F){
         
         tss <- (spec + sens) - 1
         
+        # if (isTRUE(raster)) {
+        #         return(c(au, spec, sens, tss))     
+        # } else{
+        #         boyce <- ecospat::ecospat.boyce(predicted,
+        #                                               predicted[original == 1],
+        #                                               PEplot = F)$Spearman.cor
+        #         
+        #         return(c(au, spec, sens, tss, boyce))
+        # }
+        
         return(c(au, spec, sens, tss))
+}
+
+# Compare models
+compare.models <- function(predicted, orig){
+
+        jacc <- jaccard.eval(orig, predicted)
+        
+        im <- nicheOverlap(orig, predicted, stat = "I")
+        dm <- nicheOverlap(orig, predicted, stat = "D")
+        
+        met <- model.metrics(orig, predicted, raster = T)
+        
+        return(c(jacc, im, dm, met))
 }
 
 # Get threshold
@@ -163,41 +199,4 @@ get.thresh <- function(observed, predicted){
         thr <- optimal.thresholds(td,
                                       opt.methods = "MaxSens+Spec")$pred
         thr
-}
-
-# Variable importance
-var.importance <- function(data, cols = 2:length(data), model, n = 5,
-                           get.mean = F){
-        
-        results <- matrix(nrow = n, ncol = length(cols))
-        
-        colnames(results) <- colnames(data[,cols])
-        
-        for (i in 1:n) {
-                
-                for (k in cols) {
-                        
-                        x <- data
-                        
-                        x[,k] <- x[sample.int(nrow(data)), k]
-                        
-                        pred <- predict(model, data[, cols], type = "response")
-                        
-                        pred.new <- predict(model, x[, cols], type = "response")
-                        
-                        if (min(cols) == 1) {
-                                results[i, k] <- (1 - cor(pred, pred.new))
-                        } else{
-                                results[i, (k-1)] <- (1 - cor(pred, pred.new))
-                        }
-                        
-                        
-                }
-        }
-        
-        if (isTRUE(get.mean)) {
-                round(apply(results, 2, mean),3)
-        }else{
-                results
-        }
 }

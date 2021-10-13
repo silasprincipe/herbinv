@@ -1,7 +1,7 @@
 #### Modelling of coral reef herbivorous invertebrates ####
 ## Silas C. Principe - silasprincipe@yahoo.com.br - 2021
 
-### Extract max and min temperature experience by sea urchins ###
+### Extract max and min temperature experienced by sea urchins ###
 library(tidyverse)
 library(lubridate)
 

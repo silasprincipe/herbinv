@@ -26,8 +26,7 @@ gbm.auto <- function(sp.data, weigths, blocks){
                           gbm.x = 2:length(sp.data), gbm.y = 1,
                           fold.vector = blocks, n.folds = 5,
                           site.weights = weigths,
-                          keep.fold.fit = T, plot.main = F,
-                          learning.rate = 0.05)
+                          keep.fold.fit = T, plot.main = F)
         
         if (gbm.m$n.trees < 1000) {
                 cat("Reducing learning rate.")
@@ -38,8 +37,6 @@ gbm.auto <- function(sp.data, weigths, blocks){
                 
                 while (tn < 1000) {
                         lr <- lr/2
-                        lr <- ifelse(lr == 0.025, 0.02, lr)
-                        lr <- ifelse(lr == 0.0025, 0.002, lr)
                         
                         if (lr < 0.001) {
                                 cat("Learning rate reached less than 0.001.
@@ -71,8 +68,6 @@ gbm.auto <- function(sp.data, weigths, blocks){
                         }
                 }
         }
-        
-        cat("Final model fit with lr = ", gbm.m$shrinkage, "\n")
         
         return(gbm.m)
 }
