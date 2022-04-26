@@ -24,20 +24,26 @@ library(blockCV)
 library(pROC)
 # Plotting and utilities
 library(ggplot2)
+library(fs)
 # Settings
 set.seed(2932) # Replicability of sampling
 spatt <- theme_classic() # Theme for better ploting
 
 
+
 # Load environmental and species data ----
 source("functions/Varload.r")
 lays <- c("salinitymean", "tempmean", "ph", "chlomean")
+biocl <- c("warmm", "coldm")
 
-env <- var.load(layers = lays)
+env <- var.load(layers = lays, bioclim = biocl)
 
-r12 <- var.load(folder = "proj_layers/ssp126/", layers = lays)
-r24 <- var.load(folder = "proj_layers/ssp245/", layers = lays)
-r37 <- var.load(folder = "proj_layers/ssp370/", layers = lays)
+r12 <- var.load(folder = "proj_layers/ssp126/", layers = lays,
+                bioclim = biocl, bioclimfut = "ssp126")
+r24 <- var.load(folder = "proj_layers/ssp245/", layers = lays,
+                bioclim = biocl, bioclimfut = "ssp245")
+r37 <- var.load(folder = "proj_layers/ssp370/", layers = lays,
+                bioclim = biocl, bioclimfut = "ssp370")
 
 # Load study area shapefile
 starea <- shapefile("gis/starea.shp")
@@ -49,7 +55,7 @@ r24 <- mask(r24, starea)
 r37 <- mask(r37, starea)
 
 # Change names for easier handling
-names(env) <- c("ph", "chl", "sal", "sst")
+names(env) <- c("ph", "chl", "sal", "sst", "coldm", "warmm")
 names(r37) <- names(r24) <- names(r12) <- names(env)
 
 # Scale variables
@@ -137,7 +143,9 @@ barrier.triangles <- setdiff(1:tl, intersec)
 # Create a barrier polygon, i.e. all the polygons composing the "islands"
 poly.barrier <- inla.barrier.polygon(mesh, barrier.triangles)
 
-# Matérn models
+
+
+# Matérn models ----
 # Get range and sigma
 size <- diff(range(mesh$loc[,2]))
 range0 <- round(size / 2)
@@ -151,7 +159,7 @@ spde <- inla.spde2.pcmatern(mesh,
 # Barrier model
 b.model <- inla.barrier.pcmatern(mesh,
                                  barrier.triangles = barrier.triangles,
-                                 prior.range = c(range0, 0.01),
+                                 prior.range = c(range0, 0.1),
                                  prior.sigma = c(sigma, 0.01))
 
 source("functions/barrier_model_plot.R")
@@ -160,6 +168,7 @@ plot.bmodel(pts@coords[10,1:2], mesh = mesh, spde = b.model,
             areapol = poly.barrier, crs = CRS(proj), range = range0, msd = 3)
 # plot.bmodel(pts@coords[10,1:2], mesh = mesh, spde = spde,
 #             areapol = poly.barrier, spmode = T, range = range0) # Plot SPDE
+
 
 
 # Expand raster layers to cover mesh points ----
@@ -204,77 +213,87 @@ env.e <- getd(env, ip = ips, pts = pts)
 
 # Convert to SpatialPixels*
 env.e <- as(env.e, "SpatialPixelsDataFrame")
-env.e$sstg <- inla.group(env.e$sst, n = 20)
+
+
 
 # Create models formulas ----
 
-# Creates a PC prior for random walks
-pcprior <- list(theta = list(prior='pc.prec', param=c(1,0.01), initial = log(25)))
+# Creates 1D spde for modeling temperature as a non-linear response
+# Two models are created - one in the range of SST and Coldest Month
+# and another in the range of Warmest Month
 
-# Creates 1D spde for modeling sst as a non-linear response
+# SST and Coldest Month
 knots <- seq(-2.6, 1.8, length = 25)
-d1mesh <- inla.mesh.1d(knots, interval = c(-2.6, 1.8), degree = 2, boundary = "free")
+d1mesh <- inla.mesh.1d(knots, interval = c(-2.6, 1.8), degree = 2,
+                       boundary = "free")
 
 d1spde <- inla.spde2.pcmatern(d1mesh,
                               prior.range = c(2, NA),
                               prior.sigma = c(1, 0.1),
                               constr = T)
 
+# Warmest Month
+knots.wm <- seq(-3.5, 1.3, length = 25)
+d1mesh.wm <- inla.mesh.1d(knots.wm, interval = c(-3.5, 1.3), degree = 2,
+                          boundary = "free")
+
+d1spde.wm <- inla.spde2.pcmatern(d1mesh.wm,
+                              prior.range = c(2, NA),
+                              prior.sigma = c(1, 0.1),
+                              constr = T)
+
 
 # Establish model formulas
-# We will test 7 different models
+
+# We will test 3 different base models:
+# salinity + temperature --> at least those two variables should affect the dist.
+# sal + temp + pH --> this model considers that the acidification may play a role
+# sal + temp + chl + phosphate --> this model considers productivity/light/nutrients
+# sal + temp + pH + chl + phosphate --> full model.
+
+# All models will be tested with one distinct temperature component
+# so we can evaluate wich one is better suited to explain the species niche
+# mean SST
+# mean temperature of the Warmest Month
+# mean temperature of the Coldest Month
+
+# Finally, the models will be tested with the inclusion of a Spatial component
+# (an SPDE) considering a barrier model. This yelds a total of 24 models.
+
 forms <- list()
 
-forms[[1]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sst(env.e, model = "linear") +
-        Intercept(1)
+base.f <- coordinates ~ Intercept(1) + sal(env.e, model = "linear")
+        
+forms[[1]] <- update(base.f, ~ . + sst(env.e, model = d1spde, mapper = bru_mapper(d1mesh, indexed = T)))
 
-forms[[2]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sst(env.e, model = "linear") +
-        spatial(coordinates, model = spde)+
-        Intercept(1)
+forms[[2]] <- update(forms[[1]], ~ . + ph(env.e, model = "linear"))
 
-forms[[3]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sst(env.e, model = "linear") +
-        spatial(coordinates, model = b.model, mapper = bru_mapper(mesh)) +
-        Intercept(1)
+forms[[3]] <- update(forms[[1]], ~ . + chl(env.e, model = "linear"))
 
-forms[[4]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sstg(env.e, model = "rw2", hyper = pcprior) +
-        Intercept(1)
+forms[[4]] <- update(forms[[1]], ~ . + ph(env.e, model = "linear") 
+                     + chl(env.e, model = "linear"))
 
-forms[[5]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sstg(env.e, model = "rw2", hyper = pcprior) +
-        spatial(coordinates, model = spde)+
-        Intercept(1)
+forms[[5]] <- update(base.f, ~ . + coldm(env.e, model = d1spde, mapper = bru_mapper(d1mesh, indexed = T)))
 
-forms[[6]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sstg(env.e, model = "rw2", hyper = pcprior) +
-        spatial(coordinates, model = b.model, mapper = bru_mapper(mesh)) +
-        Intercept(1)
+forms[[6]] <- update(forms[[5]], ~ . + ph(env.e, model = "linear"))
 
-forms[[7]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sst(env.e, model = d1spde, mapper = bru_mapper(d1mesh, indexed = T)) +
-        Intercept(1)
+forms[[7]] <- update(forms[[5]], ~ . + chl(env.e, model = "linear"))
 
-forms[[8]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sst(env.e, model = d1spde, mapper = bru_mapper(d1mesh, indexed = T)) +
-        spatial(coordinates, model = spde)+
-        Intercept(1)
+forms[[8]] <- update(forms[[5]], ~ . + ph(env.e, model = "linear") 
+                     + chl(env.e, model = "linear"))
 
-forms[[9]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sst(env.e, model = d1spde, mapper = bru_mapper(d1mesh, indexed = T)) +
-        spatial(coordinates, model = b.model, mapper = bru_mapper(mesh)) +
-        Intercept(1)
+forms[[9]] <- update(base.f, ~ . + warmm(env.e, model = d1spde.wm, mapper = bru_mapper(d1mesh.wm, indexed = T)))
+
+forms[[10]] <- update(forms[[9]], ~ . + ph(env.e, model = "linear"))
+
+forms[[11]] <- update(forms[[9]], ~ . + chl(env.e, model = "linear"))
+
+forms[[12]] <- update(forms[[9]], ~ . + ph(env.e, model = "linear") 
+                     + chl(env.e, model = "linear"))
+
+# Include models with SPDE (we already selected the model with better performance, to save time)
+forms[[5]] <- update(forms[[1]], ~ . + spatial(coordinates, model = b.model, mapper = bru_mapper(mesh)))
+
 
 
 # Run models ----
@@ -326,19 +345,36 @@ for (i in 1:length(forms)) {
 
 
 # Plot effects (change numbers according to model)
-source("functions/plot_random_effects.R")
-plot.random(m[[7]])
+source("functions/plot_inla.R")
+plot.random(m[[1]])
 plot.post(m[[1]])
 
-# Plot spatial effect
-plot.spatial(m[[1]], mesh)
+# Get summary
+summary(m[[1]])
+
+# Plot spatial effect (only for the ones with a spatial component!)
+plot.spatial(m[[5]], mesh)
 
 # Compare models
-deltaIC(m[[1]], m[[2]], m[[3]], m[[4]], m[[5]], m[[6]], m[[7]])
+deltaIC(m[[1]], m[[2]], m[[3]], m[[4]], criterion = "WAIC")
 
-# We proceed cross-validation with model 1
-sel.model <- 4
+# Predict each component effect spatially
+df <- pixels(mesh, mask = starea, nx = 400, ny = 400)
+pred.comp <- predict(m[[1]], data = df,
+                 formula = ~ list(
+                         # Change those according to mode and
+                         # combinations
+                         sst = sst,
+                         sal = sal,
+                         int = exp(sst + sal + Intercept)
+                 ))
 
+ggplot()+
+        gg(pred.comp$int)+ # change here according to layer
+        coord_equal()
+
+# We select the model 1 as the best one, considering WAIC and exploratory analysis
+sel.model <- 1
 
 
 
@@ -347,7 +383,7 @@ sel.model <- 4
 # To cross-validate the models we consider that it's possible to convert
 # the intensity to a proability value 
 # (see Lombardo et al. 2017; https://arxiv.org/abs/1708.03156).
-# In that case, values are converted to probability as 1-exp(-intensity)
+# In that case, values are converted to probability as 1-exp(-[integrated] intensity)
 
 # We use a spatial block cross validation, which leaves entire sections of
 # the environment out in each run of the model.
@@ -356,7 +392,10 @@ sel.model <- 4
 spat.range <- spatialAutoRange(env, showPlots = F) # get ideal range for the blocks
 
 # Get coordinates and PA
-dat <- data.frame(cbind(rbind(mesh$loc[,1:2], pts@coords), pa = pa))
+dat <- data.frame(rbind(
+        cbind(ips@coords, pa = 0),
+        cbind(pts@coords, pa = 1)
+))
 coordinates(dat) <- ~ x + y
 
 # Divide in blocks
@@ -365,8 +404,11 @@ blocks <- spatialBlock(dat, species = "pa",
 # Get the ID
 blocks <- blocks$foldID
 
+b.ips <- blocks[1:length(ips)]
+b.pts <- blocks[(length(ips)+1):length(blocks)]
+
 # For which model(s) run the CV?
-selmodels <- c(which(m.metrics$dic %in% m.metrics$dic[order(m.metrics$dic)][1:2]))
+selmodels <- c(1, 5)
 
 cvm.preds <- list()
 
@@ -375,55 +417,55 @@ for (j in 1:length(selmodels)) {
         cat("Runing model", selmodels[j], "CV. \n")
         
         # Creates a vector to hold predicted intesities
-        pred.intensity <- c()
+        pred.intensity.ip <- c()
+        pred.intensity.pts <- c()
+        
+        cv.f <- as.formula(paste0(
+                "~ exp(",
+                paste(if (is.null(names(
+                        m[[j]]$summary.random))) {
+                        m[[j]]$names.fixed
+                } else{
+                        c(m[[j]]$names.fixed,
+                          names(m[[j]]$summary.random))
+                }
+                , collapse = "+"), ")"
+        ))
         
         for (i in 1:5) {
                 cat("Block", i, "\n")
                 
-                # Set vector of response for prediction
-                pa.cv <- pa
-                pa.cv[which(blocks == i)] <- NA
+                cv.ips <- ips[which(b.ips != i),]
+                cv.pts <- pts[which(b.pts != i),]
                 
-                # Set CV stack
-                stk.cv <- inla.stack(
-                        data = list(y = pa.cv, e = ev), 
-                        A = list(A.f, 1), 
-                        effects = list(list(spatial = 1:nv),
-                                       list(b0 = rep(1, nrow(sp.data)), 
-                                            sp.data)),
-                        tag = 'est')
+                cv.m <- lgcp(forms[[j]], cv.pts,
+                     ips = cv.ips,
+                     domain = list(coordinates = mesh),
+                     options = list(control.inla = list(int.strategy = "eb"),
+                                    inla.mode = "classic"))
                 
-                # Run model for the selected model
-                cvm <- inla(forms[[selmodels[j]]],
-                                 family = 'poisson', data = inla.stack.data(stk.cv), 
-                                 control.predictor=list(A=inla.stack.A(stk.cv),
-                                                        compute=TRUE, link=1), 
-                                 control.fixed = list(mean = list(b0 = log(avg.global)),
-                                                      prec = list(b0 = 1, sal = 2)),
-                                 control.mode=list(theta=m[[selmodels[j]]]$mode$theta,
-                                                   restart=FALSE),
-                                 E = inla.stack.data(stk.cv)$e,
-                                 control.inla=list(int.strategy = "eb"),
-                                 num.threads = 3)
+                pred.ip <- predict(cv.m, data = ips[which(b.ips == i),], cv.f)
                 
-                # Get predicted intensity
-                idx <- inla.stack.index(stk.cv, "est")$data
+                pred.pts <- predict(cv.m, data = pts[which(b.pts == i),], cv.f)
                 
-                pred.intensity[which(blocks == i)] <-
-                        cvm$summary.fitted.values$mean[idx[which(blocks == i)]]
+                pred.ip <- pred.ip$mean
+                
+                pred.intensity.ip[which(b.ips == i)] <- pred.ip
+                pred.intensity.pts[which(b.pts == i)] <- pred.pts$mean
         }
         
-        rm(cvm)
+        full.intensity.ip <- predict(m[[j]], data = ips, cv.f)
         
-        # Fit values for the full model
-        idx <- inla.stack.index(stk.i, "est")$data
-        full.intensity <- m[[selmodels[j]]]$summary.fitted.values$mean[idx]
+        full.intensity.ip <- full.intensity.ip$mean
         
-        #### Calculate ROC curves and AUC values
+        full.intensity.pts <- predict(m[[j]], data = pts, cv.f)
         
-        # Convert to probability
-        probability <- 1-exp(-full.intensity) 
-        probability.cv <- 1-exp(-pred.intensity)
+        full.intensity.pts <- full.intensity.pts$mean
+        
+        probability <- 1-exp(-c(full.intensity.ip, full.intensity.pts)) 
+        probability.cv <- 1-exp(-c(pred.intensity.ip, pred.intensity.pts))
+        
+        pa <- c(rep(0, length(ips)), rep(1, length(pts)))
         
         # Calculate ROC and AUC
         m.roc <- roc(pa ~ probability)
@@ -432,8 +474,8 @@ for (j in 1:length(selmodels)) {
         m.auc.cv <- as.numeric(m.roc.cv$auc)
         
         cvm.preds[[j]] <- list(
-                "fint" = full.intensity,
-                "pint" = pred.intensity,
+                "fint" = c(full.intensity.ip, full.intensity.pts),
+                "pint" = c(pred.intensity.ip, pred.intensity.pts),
                 "mroc" = m.roc,
                 "mrocv" = m.roc.cv,
                 "fauc" = m.auc,
@@ -458,113 +500,85 @@ for (z in 1:2) {
 
 
 
-### Prediction ----
-# Creates a function to extract data for predictions
-extract.pred.data <- function(rast){
-        pred.data <- data.frame(rasterToPoints(aggregate(rast, 5)))
-        pred.data <- na.omit(pred.data)
-        coordinates(pred.data) <- ~ x + y
-        pred.data
-        
-}
+### Predictions ----
+# inlabru gets the environmental layer from the environment
+# thus, to predict to different scenarios we need to change the environmental
+# layers object (i.e. 'env.e') to the new object for which we want the prediction
 
-# Extract data for prediction
-pdat <- lapply(list(env, r12, r24, r37), extract.pred.data)
-names(pdat) <- c("current", "ssp1", "ssp2", "ssp3")
+# Predict to current scenario
+env.e <- as(env, "SpatialPixelsDataFrame")
 
-# Creates a new matrix and stack
-A.pred <- lapply(pdat, function(x){inla.spde.make.A(mesh, loc = x)})
+pred.cur <- predict(m[[sel.model]],
+                    data = env.e,
+                    formula = ~ exp(sst + sal + Intercept))
+ggplot() +
+        gg(pred.cur, aes(fill = mean)) + coord_equal()
 
-stk.list <- list()
-for (i in 1:length(pdat)) {
-        
-        stk.list[[i]] <- inla.stack(
-                data = list(y = NA), 
-                A = list(A.pred[[i]], 1), 
-                effects = list(list(spatial = 1:nv),
-                               list(b0 = 1, data.frame(pdat[[i]]@data))),
-                tag = names(pdat)[i])
-        
-}
+# Predict to SSP 1
+env.e <- as(r12, "SpatialPixelsDataFrame")
 
-# Create full stack
-stk.full <- inla.stack(stk.i, stk.list[[1]], stk.list[[2]], stk.list[[3]], stk.list[[4]])
+pred.r12 <- predict(m[[sel.model]],
+                    data = env.e,
+                    formula = ~ exp(sst + sal + Intercept))
+ggplot() +
+        gg(pred.r12, aes(fill = mean)) + coord_equal()
 
-pred.list <- list()
+# Predict to SSP 2
+env.e <- as(r24, "SpatialPixelsDataFrame")
 
-for (j in 1:length(forms)) {
-        # Run prediction model
-        model.pred <- inla(forms[[j]],
-                           family = 'poisson', data = inla.stack.data(stk.full), 
-                           control.predictor=list(A=inla.stack.A(stk.full),
-                                                  compute=TRUE, link = 1), 
-                           E = inla.stack.data(stk.full)$e,
-                           control.mode=list(theta=m[[j]]$mode$theta,
-                                             restart=FALSE),
-                           control.fixed = list(mean = list(b0 = log(avg.global)),
-                                                prec = list(b0 = 1, sal = 2)),
-                           control.compute=list(return.marginals.predictor=TRUE),
-                           control.inla=list(int.strategy = "eb"),
-                           num.threads = 3, inla.mode = "classic")
-        
-        # Creates a function to extract different types of prediction
-        extract.pred <- function(name, type = "mean"){
-                # Get index of predictions
-                index <- inla.stack.index(stk.full, name)$data
-                
-                # Get predictions
-                fit.pred <- data.frame(
-                        "m" = model.pred$summary.fitted.values[[type]][index])
-                
-                # Convert to raster 
-                pred.raster <- rasterFromXYZ(cbind(pdat[[1]]@coords, fit.pred$m))
-                names(pred.raster) <- name
-                pred.raster
-        }
-        
-        # Extract predictions for each scenario and convert to raster
-        pred.mean <- stack(lapply(names(pdat), extract.pred, type = "mean"))
-        
-        #plot(pred.mean)
-        
-        pred.list[[j]] <- pred.mean
-}
+pred.r24 <- predict(m[[sel.model]],
+                    data = env.e,
+                    formula = ~ exp(sst + sal + Intercept))
+ggplot() +
+        gg(pred.r24, aes(fill = mean)) + coord_equal()
 
-par(mfrow = c(1,2))
-plot(pred.list[[sel.model]][[1]]);plot(pred.list[[sel.model]][[4]])
-#lapply(pred.list, function(x){plot(x[[1]]);plot(x[[2]])})
+# Predict to SSP 3
+env.e <- as(r37, "SpatialPixelsDataFrame")
+
+pred.r37 <- predict(m[[sel.model]],
+                    data = env.e,
+                    formula = ~ exp(sst + sal + Intercept))
+ggplot() +
+        gg(pred.r37, aes(fill = mean)) + coord_equal()
 
 
-### Convert to exceedance probability ----
-# Get exceddance probability
+# Convert all to raster (easier handling)
+pred.cur <- as(pred.cur, "RasterStack")
+pred.r12 <- as(pred.r12, "RasterStack")
+pred.r24 <- as(pred.r24, "RasterStack")
+pred.r37 <- as(pred.r37, "RasterStack")
 
-minv <- extract(pred.list[[sel.model]][[1]], pts)
-prob <- min(minv)
+to.remove <- names(pred.cur)[!names(pred.cur) %in% c("mean", "sd", "q0.025", "q0.975")]
 
+pred.cur <- dropLayer(pred.cur, to.remove)
+pred.r12 <- dropLayer(pred.r12, to.remove)
+pred.r24 <- dropLayer(pred.r24, to.remove)
+pred.r37 <- dropLayer(pred.r37, to.remove)
 
-# Creates a function to extract different types of prediction
-extract.excprob <- function(name, prob){
-        # Get index of predictions
-        index <- inla.stack.index(stk.full, name)$data
-        
-        excprob <- sapply(model.pred$marginals.fitted.values,
-                          function(marg){
-                                  1-inla.pmarginal(q = prob, marginal = marg)})
-        
-        # Get predictions
-        fit.pred <- data.frame(
-                "m" = model.pred$summary.fitted.values[[type]][index])
-        
-        # Convert to raster 
-        pred.raster <- rasterFromXYZ(cbind(pdat[[1]]@coords, fit.pred$m))
-        names(pred.raster) <- name
-        pred.raster
-}
+# Save results
+dir <- paste("results", species, "predictions", sep = "/")
+dir_create(dir)
 
-# Extract predictions for each scenario and convert to raster
-pred.mean <- stack(lapply(names(pdat), extract.excprob, prob = prob))
+writeRaster(pred.cur, paste0(dir, "/", species, "_", names(pred.cur), "_current.tif"),
+            bylayer = T, overwrite = T)
+writeRaster(pred.r12, paste0(dir, "/", species, "_", names(pred.r12), "_ssp1.tif"),
+            bylayer = T, overwrite = T)
+writeRaster(pred.r24, paste0(dir, "/", species, "_", names(pred.r24), "_ssp2.tif"),
+            bylayer = T, overwrite = T)
+writeRaster(pred.r37, paste0(dir, "/", species, "_", names(pred.r37), "_ssp3.tif"),
+            bylayer = T, overwrite = T)
 
+# Get differences
+dif.r12 <- pred.r12 - pred.cur
+dif.r24 <- pred.r24 - pred.cur
+dif.r37 <- pred.r37 - pred.cur
 
+# Save results
+writeRaster(dif.r12, paste0(dir, "/", species, "_", names(dif.r12), "_dif_ssp1.tif"),
+            bylayer = T, overwrite = T)
+writeRaster(dif.r24, paste0(dir, "/", species, "_", names(dif.r24), "_dif_ssp2.tif"),
+            bylayer = T, overwrite = T)
+writeRaster(dif.r37, paste0(dir, "/", species, "_", names(dif.r37), "_dif_ssp3.tif"),
+            bylayer = T, overwrite = T)
 
-
-
+## END OF CODE

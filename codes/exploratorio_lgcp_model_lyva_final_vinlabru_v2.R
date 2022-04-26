@@ -31,9 +31,10 @@ spatt <- theme_classic() # Theme for better ploting
 
 # Load environmental and species data ----
 source("functions/Varload.r")
-lays <- c("salinitymean", "tempmean", "ph", "chlomean")
+lays <- c("salinitymean", "tempmean", "ph", "chlomean", "silicatemax")
+biocl <- c("warmm", "coldm")
 
-env <- var.load(layers = lays)
+env <- var.load(layers = lays, bioclim = biocl)
 
 r12 <- var.load(folder = "proj_layers/ssp126/", layers = lays)
 r24 <- var.load(folder = "proj_layers/ssp245/", layers = lays)
@@ -42,6 +43,8 @@ r37 <- var.load(folder = "proj_layers/ssp370/", layers = lays)
 # Load study area shapefile
 starea <- shapefile("gis/starea.shp")
 
+starea <- buffer(starea, 2)
+
 # Mask environmental layers
 env <- mask(env, starea)
 r12 <- mask(r12, starea)
@@ -49,8 +52,8 @@ r24 <- mask(r24, starea)
 r37 <- mask(r37, starea)
 
 # Change names for easier handling
-names(env) <- c("ph", "chl", "sal", "sst")
-names(r37) <- names(r24) <- names(r12) <- names(env)
+names(env) <- c("ph", "chl", "sal", "sil", "sst", "coldm", "warmm")
+names(r37) <- names(r24) <- names(r12) <- names(env)[1:5]
 
 # Scale variables
 # Future variables are scaled according to the current period
@@ -95,8 +98,8 @@ dgk <- 111
 
 # Creates mesh and plot
 mesh <- inla.mesh.2d(boundary = starea,
-                     max.edge = c(1.2, 20)*dgk,
-                     cutoff = 0.25*dgk, crs = crs(env))
+                     max.edge = c(4, 20)*dgk,
+                     cutoff = 1*dgk, crs = crs(env))
 
 ggplot()+gg(mesh)+coord_fixed()+spatt;mesh$n
 
@@ -151,7 +154,7 @@ spde <- inla.spde2.pcmatern(mesh,
 # Barrier model
 b.model <- inla.barrier.pcmatern(mesh,
                                  barrier.triangles = barrier.triangles,
-                                 prior.range = c(range0, 0.01),
+                                 prior.range = c(range0, 0.1),
                                  prior.sigma = c(sigma, 0.01))
 
 source("functions/barrier_model_plot.R")
@@ -166,7 +169,7 @@ plot.bmodel(pts@coords[10,1:2], mesh = mesh, spde = b.model,
 
 # Get integration points
 source("functions/get_weights.R")
-ips <- get.weights(mesh, starea)
+ips <- get.weights(mesh, starea,)
 
 getd <- function(rast, ip, pts){
         rast <- extend(rast, (extent(min(mesh$loc[,1]),
@@ -204,77 +207,86 @@ env.e <- getd(env, ip = ips, pts = pts)
 
 # Convert to SpatialPixels*
 env.e <- as(env.e, "SpatialPixelsDataFrame")
-env.e$sstg <- inla.group(env.e$sst, n = 20)
 
 # Create models formulas ----
 
-# Creates a PC prior for random walks
-pcprior <- list(theta = list(prior='pc.prec', param=c(1,0.01), initial = log(25)))
+# Creates 1D spde for modeling temperature as a non-linear response
+# Two models are created - one in the range of SST and Coldest Month
+# and another in the range of Warmest Month
 
-# Creates 1D spde for modeling sst as a non-linear response
+# SST and Coldest Month
 knots <- seq(-2.6, 1.8, length = 25)
-d1mesh <- inla.mesh.1d(knots, interval = c(-2.6, 1.8), degree = 2, boundary = "free")
+d1mesh <- inla.mesh.1d(knots, interval = c(-2.6, 1.8), degree = 2,
+                       boundary = "free")
 
 d1spde <- inla.spde2.pcmatern(d1mesh,
                               prior.range = c(2, NA),
                               prior.sigma = c(1, 0.1),
                               constr = T)
 
+# Warmest Month
+knots.wm <- seq(-3.5, 1.3, length = 25)
+d1mesh.wm <- inla.mesh.1d(knots.wm, interval = c(-3.5, 1.3), degree = 2,
+                          boundary = "free")
+
+d1spde.wm <- inla.spde2.pcmatern(d1mesh.wm,
+                              prior.range = c(2, NA),
+                              prior.sigma = c(1, 0.1),
+                              constr = T)
+
 
 # Establish model formulas
-# We will test 7 different models
+
+# We will test 3 different base models:
+# salinity + temperature --> at least those two variables should affect the dist.
+# sal + temp + pH --> this model considers that the acidification may play a role
+# sal + temp + chl + phosphate --> this model considers productivity/light/nutrients
+# sal + temp + pH + chl + phosphate --> full model.
+
+# All models will be tested with one distinct temperature component
+# so we can evaluate wich one is better suited to explain the species niche
+# mean SST
+# mean temperature of the Warmest Month
+# mean temperature of the Coldest Month
+
+# Finally, the models will be tested with the inclusion of a Spatial component
+# (an SPDE) considering a barrier model. This yelds a total of 24 models.
+
 forms <- list()
 
-forms[[1]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sst(env.e, model = "linear") +
-        Intercept(1)
+base.f <- coordinates ~ Intercept(1) + sal(env.e, model = "linear")
+        
+forms[[1]] <- update(base.f, ~ . + sst(env.e, model = d1spde, mapper = bru_mapper(d1mesh, indexed = T)))
 
-forms[[2]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sst(env.e, model = "linear") +
-        spatial(coordinates, model = spde)+
-        Intercept(1)
+forms[[2]] <- update(forms[[1]], ~ . + ph(env.e, model = "linear"))
 
-forms[[3]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sst(env.e, model = "linear") +
-        spatial(coordinates, model = b.model, mapper = bru_mapper(mesh)) +
-        Intercept(1)
+forms[[3]] <- update(forms[[1]], ~ . + chl(env.e, model = "linear") + sil(env.e, model = "linear"))
 
-forms[[4]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sstg(env.e, model = "rw2", hyper = pcprior) +
-        Intercept(1)
+forms[[4]] <- update(forms[[1]], ~ . + ph(env.e, model = "linear") 
+                     + chl(env.e, model = "linear") + sil(env.e, model = "linear"))
 
-forms[[5]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sstg(env.e, model = "rw2", hyper = pcprior) +
-        spatial(coordinates, model = spde)+
-        Intercept(1)
+forms[[5]] <- update(base.f, ~ . + coldm(env.e, model = d1spde, mapper = bru_mapper(d1mesh, indexed = T)))
 
-forms[[6]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sstg(env.e, model = "rw2", hyper = pcprior) +
-        spatial(coordinates, model = b.model, mapper = bru_mapper(mesh)) +
-        Intercept(1)
+forms[[6]] <- update(forms[[5]], ~ . + ph(env.e, model = "linear"))
 
-forms[[7]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sst(env.e, model = d1spde, mapper = bru_mapper(d1mesh, indexed = T)) +
-        Intercept(1)
+forms[[7]] <- update(forms[[5]], ~ . + chl(env.e, model = "linear"))
 
-forms[[8]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sst(env.e, model = d1spde, mapper = bru_mapper(d1mesh, indexed = T)) +
-        spatial(coordinates, model = spde)+
-        Intercept(1)
+forms[[8]] <- update(forms[[5]], ~ . + ph(env.e, model = "linear") 
+                     + chl(env.e, model = "linear"))
 
-forms[[9]] <- coordinates ~ 
-        sal(env.e, model = "linear")+
-        sst(env.e, model = d1spde, mapper = bru_mapper(d1mesh, indexed = T)) +
-        spatial(coordinates, model = b.model, mapper = bru_mapper(mesh)) +
-        Intercept(1)
+forms[[9]] <- update(base.f, ~ . + warmm(env.e, model = d1spde.wm, mapper = bru_mapper(d1mesh.wm, indexed = T)))
+
+forms[[10]] <- update(forms[[9]], ~ . + ph(env.e, model = "linear"))
+
+forms[[11]] <- update(forms[[9]], ~ . + chl(env.e, model = "linear"))
+
+forms[[12]] <- update(forms[[9]], ~ . + ph(env.e, model = "linear") 
+                     + chl(env.e, model = "linear"))
+
+forms[[2]] <- update(forms[[1]], ~ . + spatial(coordinates, model = b.model, mapper = bru_mapper(mesh)))
+forms[[3]] <- update(forms[[1]], ~ . + spatial(coordinates, model = spde))
+
+#spatial(coordinates, model = b.model, mapper = bru_mapper(mesh))
 
 
 # Run models ----
@@ -296,7 +308,7 @@ for (i in 1:length(forms)) {
                        domain = list(coordinates = mesh),
                        options = list(control.inla = list(int.strategy = "eb"),
                                       control.compute(cpo = T),
-                                      inla.mode = "classic"
+                                      inla.mode = "experimental"
                                       # For verbosity, uncoment those lines:
                                       # , bru_verbose = TRUE,
                                       # verbose = TRUE
@@ -326,20 +338,68 @@ for (i in 1:length(forms)) {
 
 
 # Plot effects (change numbers according to model)
-source("functions/plot_random_effects.R")
-plot.random(m[[7]])
-plot.post(m[[1]])
+source("functions/plot_inla.R")
+plot.random(m[[4]])
+plot.post(m[[2]])
 
 # Plot spatial effect
-plot.spatial(m[[1]], mesh)
+plot.spatial(m[[4]], mesh)
 
 # Compare models
-deltaIC(m[[1]], m[[2]], m[[3]], m[[4]], m[[5]], m[[6]], m[[7]])
+deltaIC(m[[1]], m[[2]], m[[3]], m[[4]], m[[5]], m[[6]],
+        m[[7]], m[[8]], m[[9]], m[[10]], m[[11]], m[[12]], criterion = "WAIC")
 
 # We proceed cross-validation with model 1
 sel.model <- 4
 
 
+
+# Prediction to compare
+df <- pixels(mesh, mask = starea, nx = 400, ny = 400)
+for (i in 1:length(forms)) {
+        
+        vars <- c(names(env), "sstg", "spatial", "Intercept")
+        
+        nexp <- paste(forms[[i]], collapse = " ")
+        
+        c.nexp <- c()
+        
+        for (z in 1:length(vars)) {
+               if (grepl(paste0(vars[z],"[[:punct:]]"), nexp)) {
+                       c.nexp <- c(c.nexp, vars[z])
+               } 
+        }
+        
+        c.nexp <- paste0("~exp(", paste(c.nexp, collapse = "+"), ")")
+        
+        int1 <- predict(m[[i]], data = df, formula = as.formula(c.nexp))
+        #int1$mean <- int1$mean * 1e5
+        
+        testes[[i]] <- as(int1, "RasterStack")
+        testesb[[i]] <- 1-exp(-testes[[i]])
+        testesc[[i]] <- 1-exp(-(testes[[i]]*717.9475))
+        
+        # p <- ggplot()+
+        #         gg(int1)+
+        #         coord_equal()
+        # p2 <- ggplot()+
+        #         gg(int1)+
+        #         gg(pts, alpha = .3, color = "yellow", size = .5)+
+        #         coord_equal()
+        # pf <- p + p2
+        # ggsave(paste0("figuras_temp/modelo",i,".png"), pf)
+}
+
+library(leaflet)
+pal <- colorNumeric(c("#0C2C84", "#FFC300", "#C70039"), values(testes[[5]]$mean),
+                    na.color = "transparent")
+leaflet() %>% addTiles() %>%
+        addRasterImage(testes[[5]]$mean, colors = pal, opacity = 0.8) %>%
+        addLegend(pal = pal, values = values(testes[[5]]$mean))#%>%
+        addCircleMarkers(data = pts2)
+
+library(sdmvis)
+sdmvis::sdm_leaflet(sdm = intr$mean, mode = "continuous", pts = pts2@coords)
 
 
 ### Cross-validation ----

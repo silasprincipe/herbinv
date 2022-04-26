@@ -179,15 +179,15 @@ knots <- seq(-3, 2, length = 25)
 d1mesh <- inla.mesh.1d(knots, interval = c(-3, 2), degree = 2)
 
 d1spde <- inla.spde2.pcmatern(d1mesh,
-                              prior.range = c(2, NA),
-                              prior.sigma = c(1, 0.01))
+                              prior.range = c(1, NA),
+                              prior.sigma = c(1, 0.1))
 
 cmp.sst <- coordinates ~
-        sst(sp.env, model = d1spde) +
+        sst(env.e, model = d1spde) +
         Intercept(1)
 
 fit.7 <- lgcp(cmp.sst, pts,
-              ips = ipts,
+              ips = ips,
               domain = list(coordinates = mesh),
               options = list(control.inla = list(int.strategy = "eb"),
                              inla.mode = "classic",
@@ -233,10 +233,20 @@ ggplot()+gg(int1)+coord_equal()
 ggplot()+gg(int2)+coord_equal()
 ggplot()+gg(int3)+coord_equal()
 
+# Non pc matern
+d1spde <- inla.spde2.matern(d1mesh,
+                            # prior.range = c(2, NA),
+                            # prior.sigma = c(0.1, 0.01)
+                            theta.prior.prec = 1e-4,
+                            constr = T)
+### funcionando
 
+sp.env <- env.e
+
+sp.env$sstc <- seq(-2.6, 1.8, length.out = length(sp.env$sst))
 
 elev.pred <- predict(
-        fit.7,
+        m[[7]],
         data = sp.env,
         formula = ~ sst_eval(sstc)
 )
@@ -257,20 +267,24 @@ ggplot(elev.pred) +
 
 
 df <- pixels(mesh, mask = starea, nx = 400, ny = 400)
-int1 <- predict(fit.7, data = sp.env, ~ exp(sst + spatial + Intercept))
+int1 <- predict(m[[7]], data = df, ~ exp(sst + sal + Intercept))
 
 int.pred <- int1["mean"]
 
 int1$mean <- int1$mean * 1230.775
 
+int2 <- int1
+
+int2$mean <- 1-exp(-int1$mean)
+
 ggplot() +
-        gg(int.pred) +
+        gg(int2) +
         #gg(starea, alpha = 0, lwd = 1) +
         #gg(pts, color = "DarkGreen") +
         coord_equal()
 
 
-
+23.90894 * 30.02841
 
 #
 exposure <- c(ipts$weight, rep(0, length(pts)))
