@@ -505,12 +505,25 @@ for (z in 1:2) {
 # thus, to predict to different scenarios we need to change the environmental
 # layers object (i.e. 'env.e') to the new object for which we want the prediction
 
+# Get formula
+pred.f <- as.formula(paste0(
+        "~ exp(",
+        paste(if (is.null(names(
+                m[[sel.model]]$summary.random))) {
+                m[[sel.model]]$names.fixed
+        } else{
+                c(m[[sel.model]]$names.fixed,
+                  names(m[[sel.model]]$summary.random))
+        }
+        , collapse = "+"), ")"
+))
+
 # Predict to current scenario
 env.e <- as(env, "SpatialPixelsDataFrame")
 
 pred.cur <- predict(m[[sel.model]],
                     data = env.e,
-                    formula = ~ exp(sst + sal + Intercept))
+                    formula = pred.f)
 ggplot() +
         gg(pred.cur, aes(fill = mean)) + coord_equal()
 
@@ -519,7 +532,7 @@ env.e <- as(r12, "SpatialPixelsDataFrame")
 
 pred.r12 <- predict(m[[sel.model]],
                     data = env.e,
-                    formula = ~ exp(sst + sal + Intercept))
+                    formula = pred.f)
 ggplot() +
         gg(pred.r12, aes(fill = mean)) + coord_equal()
 
@@ -528,7 +541,7 @@ env.e <- as(r24, "SpatialPixelsDataFrame")
 
 pred.r24 <- predict(m[[sel.model]],
                     data = env.e,
-                    formula = ~ exp(sst + sal + Intercept))
+                    formula = pred.f)
 ggplot() +
         gg(pred.r24, aes(fill = mean)) + coord_equal()
 
@@ -537,7 +550,7 @@ env.e <- as(r37, "SpatialPixelsDataFrame")
 
 pred.r37 <- predict(m[[sel.model]],
                     data = env.e,
-                    formula = ~ exp(sst + sal + Intercept))
+                    formula = pred.f)
 ggplot() +
         gg(pred.r37, aes(fill = mean)) + coord_equal()
 
