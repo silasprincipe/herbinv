@@ -1,5 +1,12 @@
-                          BO_ph BO21_chlomean_ss BO21_silicatemean_ss BO21_dissoxmin_ss
-BO_ph                 1.0000000       -0.3345082          -0.38352154       -0.02311960
-BO21_chlomean_ss     -0.3345082        1.0000000           0.33155078        0.60612925
-BO21_silicatemean_ss -0.3835215        0.3315508           1.00000000        0.08237381
-BO21_dissoxmin_ss    -0.0231196        0.6061292           0.08237381        1.00000000
+                            BO_ph_lonlat BO21_chlomean_ss_lonlat BO21_dissoxmin_ss_lonlat BO21_silicatemean_ss_lonlat
+BO_ph_lonlat                   1.0000000              -0.3190920               -0.0382173                 -0.40444954
+BO21_chlomean_ss_lonlat       -0.3190920               1.0000000                0.6314709                  0.35338022
+BO21_dissoxmin_ss_lonlat      -0.0382173               0.6314709                1.0000000                  0.10743360
+BO21_silicatemean_ss_lonlat   -0.4044495               0.3533802                0.1074336                  1.00000000
+BO21_tempmean_ss_lonlat       -0.1705453              -0.5103550               -0.8561862                  0.07779481
+                            BO21_tempmean_ss_lonlat
+BO_ph_lonlat                            -0.17054526
+BO21_chlomean_ss_lonlat                 -0.51035502
+BO21_dissoxmin_ss_lonlat                -0.85618617
+BO21_silicatemean_ss_lonlat              0.07779481
+BO21_tempmean_ss_lonlat                  1.00000000

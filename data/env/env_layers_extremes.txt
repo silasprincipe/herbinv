@@ -1,7 +1,0 @@
-"1" "BO21_lightbotmax_bdmean"
-"2" "BO_ph"
-"3" "BO21_chlomean_ss"
-"4" "BO21_silicatemean_ss"
-"5" "coldest_quarter"
-"6" "BO21_salinitymean_ss"
-"7" "warmest_quarter"

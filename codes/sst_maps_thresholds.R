@@ -10,6 +10,13 @@ library(fs)
 
 load("data/sst_limits/allspecies_oisst_thvalues.RData")
 
+# Load study area shapefile for removing some areas on the border
+# of croped area (see file prep_layers_current.R for explanation).
+starea <- shapefile("gis/starea.shp")
+# As this was based on the 0.083 resolution file, we just add
+# a small buffer to ensure that all relevant areas will be included
+starea <- buffer(starea, 1)
+
 ### All species in current period ----
 for (j in 1:3) {
         
@@ -18,6 +25,7 @@ for (j in 1:3) {
         
         # Load NOAA SST files
         current <- list.files("data/sst_limits/noaa", full.names = T)
+        current <- current[grep(paste0(2000:2014, collapse = "|"), current)]
         current <- lapply(current, brick)
         current <- stack(current)
         
@@ -50,6 +58,8 @@ for (j in 1:3) {
                 
                 r <- mask(r, m)
                 
+                r <- mask(r, starea)
+                
                 # Threshold according to limits
                 r <- calc(r, function(x){
                         x <- ifelse(x > maxlim,
@@ -72,7 +82,8 @@ for (j in 1:3) {
         
         # save file
         writeRaster(thr, paste0("data/sst_limits/",
-                                species, "_current_thresh.tif"))
+                                species, "_current_thresh.tif"),
+                    overwrite = T)
         
 }
 
@@ -82,11 +93,14 @@ rm(list = ls()) # clean the environment
 
 # Load threshold data
 load("data/sst_limits/allspecies_oisst_thvalues.RData")
+# Load mask
+starea <- shapefile("gis/starea.shp")
+starea <- buffer(starea, 1)
 
 # Run in loop for all SSP scenarios
-for (k in 1:4) {
+for (k in 1:3) {
         
-        ssp <- c("ssp126", "ssp245", "ssp370", "ssp585")[k]
+        ssp <- c("ssp126", "ssp245", "ssp370")[k]
         
         # Run in loop for all species
         for (j in 1:3) {
@@ -97,6 +111,7 @@ for (k in 1:4) {
                 clayers <- list.files(paste0("data/sst_limits/cmip6/", ssp,
                                              "/mean"),
                                       full.names = T)
+                clayers <- clayers[grep(paste0(2086:2100, collapse = "|"), clayers)]
                 
                 # Set a progress bar
                 pb <- progress_bar$new(total = length(clayers),
@@ -116,6 +131,8 @@ for (k in 1:4) {
                         
                         nam <- names(r)
                         
+                        r <- mask(r, starea)
+                        
                         # Apply threshold
                         r <- calc(r, function(x){
                                 x <- ifelse(x > maxlim,
@@ -133,12 +150,13 @@ for (k in 1:4) {
                         pb$tick() # tick the progress bar
                 }
                 
-                # Divide by the number o layers
+                # Divide by the number of layers
                 thr <- thr/length(clayers)
                 
                 # Save file
                 writeRaster(thr, paste0("data/sst_limits/",
-                                        species, "_", ssp, "_thresh.tif"))
+                                        species, "_", ssp, "_thresh.tif"),
+                            overwrite = T)
                 
         }
 }

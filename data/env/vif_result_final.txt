@@ -1,0 +1,5 @@
+             Variables      VIF
+1                BO_ph 1.528263
+2     BO21_chlomean_ss 2.215943
+3     BO21_tempmean_ss 1.657938
+4 BO21_salinitymean_ss 1.666829

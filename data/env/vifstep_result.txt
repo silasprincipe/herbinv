@@ -1,14 +1,15 @@
-7 variables from the 11 input variables have collinearity problem: 
+6 variables from the 11 input variables have collinearity problem: 
  
-BO21_dissoxmean_ss BO21_silicatemax_ss BO21_tempmax_ss BO21_chlomax_ss BO21_salinitymean_ss BO21_salinitymin_ss BO21_tempmean_ss 
+BO21_dissoxmean_ss_lonlat BO21_silicatemax_ss_lonlat BO21_tempmax_ss_lonlat BO21_chlomax_ss_lonlat BO21_salinitymean_ss_lonlat BO21_salinitymin_ss_lonlat 
 
 After excluding the collinear variables, the linear correlation coefficients ranges between: 
-min correlation ( BO21_dissoxmin_ss ~ BO_ph ):  -0.0231196 
-max correlation ( BO21_dissoxmin_ss ~ BO21_chlomean_ss ):  0.6061292 
+min correlation ( BO21_dissoxmin_ss_lonlat ~ BO_ph_lonlat ):  -0.0382173 
+max correlation ( BO21_tempmean_ss_lonlat ~ BO21_dissoxmin_ss_lonlat ):  -0.8561862 
 
 ---------- VIFs of the remained variables -------- 
-             Variables      VIF
-1                BO_ph 1.296499
-2     BO21_chlomean_ss 2.000353
-3 BO21_silicatemean_ss 1.250563
-4    BO21_dissoxmin_ss 1.691244
+                    Variables      VIF
+1                BO_ph_lonlat 1.448042
+2     BO21_chlomean_ss_lonlat 2.128357
+3    BO21_dissoxmin_ss_lonlat 4.900384
+4 BO21_silicatemean_ss_lonlat 1.368644
+5     BO21_tempmean_ss_lonlat 4.729445
