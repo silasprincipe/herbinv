@@ -30,6 +30,8 @@ codes <- c("BO21_tempmean_ss",
            "BO_ph",
            "BO21_chlomean_ss",
            "BO21_chlomax_ss",
+           "BO21_phosphatemean_ss",
+           "BO21_phosphatemax_ss",
            "BO21_silicatemax_ss",
            "BO21_silicatemean_ss",
            "BO21_dissoxmean_ss",
@@ -141,10 +143,6 @@ write.table(names(env.3), "data/env/selected_env_layers.txt", col.names = F)
 
 
 # Prepare "distance to coast" layer ----
-# This can take some time! If you prefer, instead use the file
-# that is already prepared with the code:
-# dist <- raster("data/env/ready_layers/distcoast.tif")
-
 # Load rnaturalearth
 library(rnaturalearth)
 
@@ -154,45 +152,48 @@ coast <- ne_coastline(scale = "large", returnclass = "sp")
 # Load a Bio-ORACLE base file
 base <- raster("data/env/env_layers/BO2_tempmean_ss_lonlat.tif")
 
-# Crop to extent
-base <- crop(base, extent(-99, -29, -42.5, 42.5)) #safety margin
-
-# Reproject to equal area lambers
-proj <- "+proj=laea +lat_0=0 +lon_0=-70 +x_0=0 +y_0=0 +datum=WGS84 +units=km +no_defs"
+# Reproject to Plate Carée (Equidistant Cylindrical)
+proj <- "+proj=eqc +lat_ts=0 +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +ellps=WGS84 +units=km"
 base <- stack(projectRaster(base, crs = proj))
-coast <- spTransform(crop(coast, extent(-99, -29, -42.5, 42.5)), crs(proj))
+
+# Reproject also the coastline
+# we use just the part that interest us to save time
+coast <- spTransform(coast, crs(proj))
+coast <- crop(coast, extent(-15000, 0, -9000, 9000))
 
 # Get a raster with coastlines
 base.coast <- base
 base.coast[] <- 1
-coast.rast <- rasterize(coast, base.coast, mask = T)
+system.time(coast.rast <- rasterize(coast, base.coast, mask = T))
+# Takes approximately 18 minutes
 
 # Get distance to coast
-distcoast <- distance(coast.rast)
+system.time(distcoast <- distance(coast.rast))
+# Takes approximately 1h30
+
+# Go back to lon lat projection
+base <- raster("data/env/env_layers/BO2_tempmean_ss_lonlat.tif")
+distcoast.lon <- projectRaster(distcoast, base)
+
+# Crop to study area
+distcoast.crop <- crop(distcoast.lon, extent(-99, -29, -42.5, 42.5))
+plot(distcoast.crop)
 
 # Load shapefile of study area
 starea <- shapefile("gis/starea.shp")
-starea <- spTransform(starea, CRS(proj))
-plot(distcoast);lines(starea)
+plot(distcoast.crop);lines(starea)
 
 # Crop and mask
-
-# First get a ready file
-base.c <- raster("data/env/crop_layers/BO21_tempmean_ss.tif")
-base.c <- projectRaster(base.c, crs = CRS(proj))
-
-# Crop and mask
-distcoast <- crop(distcoast, base.c)
-distcoast <- mask(distcoast, base.c)
-plot(distcoast)
+distcoast.crop <- mask(distcoast.crop, starea)
+plot(distcoast.crop)
 
 # Is there any NA?
-base.pts <- rasterToPoints(base.c)
-dist.pts <- extract(distcoast, base.pts[,1:2])
+base.pts <- rasterToPoints(mask(base, starea))
+dist.pts <- extract(distcoast.crop, base.pts[,1:2])
 
 sum(is.na(dist.pts)) # No, everything is fine.
 
 # Save file:
-writeRaster(distcoast, "data/env/crop_layers/distcoast.tif", overwrite = T)
+writeRaster(distcoast.crop, "data/env/crop_layers/distcoast.tif", overwrite = T)
 
 #### END

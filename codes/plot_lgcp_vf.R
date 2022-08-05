@@ -80,7 +80,8 @@ nlt <- theme_classic()+
         theme(axis.line = element_blank(),
               axis.ticks = element_blank(),
               axis.text = element_blank(),
-              axis.title.x.top = element_text(vjust = 2),
+              axis.title.x.top = element_text(vjust = 2, size = 16),
+              axis.title.y.left = element_text(size = 16),
               legend.position="none",
               panel.grid.major = element_line(linetype = 'dashed', 
                                               colour = "grey70",
@@ -92,8 +93,9 @@ nlt <- theme_classic()+
 wlt <- theme_classic()+
         theme(axis.line = element_blank(),
               axis.ticks = element_blank(),
-              axis.text = element_text(colour = "grey60"),
-              axis.title.x.top = element_text(vjust = 2),
+              axis.text = element_text(colour = "grey60", size = 14),
+              axis.title.x.top = element_text(vjust = 2, size = 16),
+              axis.title.y.left = element_text(size = 16),
               panel.background = element_blank(),
               panel.border = element_rect(fill = NA, color = "grey60"),
               panel.grid.major = element_line(linetype = 'dashed', 
@@ -101,7 +103,10 @@ wlt <- theme_classic()+
                                               size = .1),
               legend.position="bottom",
               legend.title.align=0.5,
-              legend.background = element_rect(fill = "white")
+              legend.text = element_text(size = 16),
+              legend.title = element_text(size = 16),
+              legend.background = element_rect(fill = "white"),
+              
         )
 
 int <- theme_classic()+
