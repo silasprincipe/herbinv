@@ -1,0 +1,53 @@
+---
+title: "Predicted distribution of Atlantic Sea-urchins"
+description: |
+  Welcome to the website. I hope you enjoy it!
+author:
+  - first_name: "Silas C."
+    last_name: "Principe"
+    url: https://silasprincipe.github.io
+    affiliation: Oceanographic Institute, USP
+    affiliation_url: https://www.io.usp.br
+    orcid_id: 0000-0003-0645-5666
+  - name: "JJ Allaire"
+    url: https://github.com/jjallaire
+    affiliation: RStudio
+    affiliation_url: https://www.rstudio.com
+  - name: "Rich Iannone"
+    url: https://github.com/rich-iannone
+    affiliation: RStudio
+    affiliation_url: https://www.rstudio.com
+site: distill::distill_website
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+# Learn more about creating websites with Distill at:
+# https://rstudio.github.io/distill/website.html
+
+# Learn more about publishing to GitHub Pages at:
+# https://rstudio.github.io/distill/publish_website.html#github-pages
+
+```
+
+# Section 1
+
+This is my website. Welcome.
+
+```{r, layout="l-screen"}
+library(leaflet)
+leaflet() %>%
+  addTiles() %>%  # Add default OpenStreetMap map tiles
+  addMarkers(lng=174.768, lat=-36.852, popup="The birthplace of R")
+```
+
+# Section 2
+
+## Sub-section 1
+
+
+# Acknowledgments {.appendix}
+
+We'd like to thank the following funding sources for making this work possible: 
+Source 1, Source 2, and Source 3. 
