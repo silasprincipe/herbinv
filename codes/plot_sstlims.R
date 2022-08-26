@@ -8,6 +8,7 @@ library(ggplot2)
 library(sf)
 library(raster)
 library(patchwork)
+library(fs)
 
 # Load base shapefiles ----
 base <- shapefile("gis/basemaps/ne_110m_land_edited.shp")
@@ -24,7 +25,7 @@ base <- st_as_sf(base)
 load("data/sst_limits/allspecies_oisst_thvalues.RData")
 
 # Load results ----
-sp <- "lyva"
+sp <- "lyva" # Each species is run separately [try "eclu" and "trve"]
 
 # Load rasters generated before
 curr <- raster(paste0("data/sst_limits/", sp, "_current_thresh.tif"))
@@ -54,7 +55,11 @@ get.pol <- function(x){
                 x[x >= lval] <- 1
                 x
         })
-        temp <- st_as_sf(rasterToPolygons(temp, dissolve = T))
+        temp <- rasterToPolygons(temp, dissolve = T)
+        temp <- aggregate(buffer(temp,0.0001)) # We use a negligible value here
+                                              # to solve problems in the pols
+                                              # conversion.
+        temp <- st_as_sf(temp)
         temp <- st_set_crs(temp, crs(curr))
         temp
 }
@@ -263,9 +268,9 @@ pcf <- pc +
                 ymax = -900)
 
 
-ggsave(paste0("figures/", sp, "_sstlims_current.jpg"), pcf,
-       width = 16, height = 18, units = "cm")
-
+# ggsave(paste0("figures/", sp, "_sstlims_current.jpg"), pcf,
+#        width = 16, height = 18, units = "cm")
+# 
 
 
 ##### SSP1 ----
@@ -374,8 +379,8 @@ ps1f <- ps1 +
 
 ps1f.s <- ps1f + theme(legend.position = "none")
 
-ggsave(paste0("figures/", sp, "_sstlims_ssp1.jpg"), ps1f.s,
-       width = 16, height = 18, units = "cm")
+# ggsave(paste0("figures/", sp, "_sstlims_ssp1.jpg"), ps1f.s,
+#        width = 16, height = 18, units = "cm")
 
 
 
@@ -486,9 +491,9 @@ ps2f <- ps2 +
 
 ps2f.s <- ps2f + theme(legend.position = "none")
 
-ggsave(paste0("figures/", sp, "_sstlims_ssp2.jpg"), ps2f.s,
-       width = 16, height = 18, units = "cm")
-
+# ggsave(paste0("figures/", sp, "_sstlims_ssp2.jpg"), ps2f.s,
+#        width = 16, height = 18, units = "cm")
+# 
 
 
 
@@ -598,8 +603,8 @@ ps3f <- ps3 +
 
 ps3f.s <- ps3f + theme(legend.position = "none")
 
-ggsave(paste0("figures/", sp, "_sstlims_ssp3.jpg"), ps3f.s,
-       width = 16, height = 18, units = "cm")
+# ggsave(paste0("figures/", sp, "_sstlims_ssp3.jpg"), ps3f.s,
+#        width = 16, height = 18, units = "cm")
 
 
 # Species range ----
@@ -630,4 +635,19 @@ final <- pcf + ps1f + ps2f + ps3f + plot_layout(nrow = 1, guides = "collect") &
         theme(legend.position='bottom')
 
 ggsave(paste0("figures/", sp, "_sstlims_comp.jpg"), final,
-       width = 50, height = 18, units = "cm")
+       width = 50, height = 18, units = "cm", quality = 100)
+
+# Save area results ----
+areas <- data.frame(
+  scenario = c("current", paste0("ssp", 1:3)),
+  area_km2 = as.numeric(c(st_area(curr.p), st_area(ssp1.p),
+           st_area(ssp2.p), st_area(ssp3.p)))
+)
+
+areas$delta <- areas$area_km2 - areas$area_km2[1]
+areas$delta_perc <- (areas$delta*100)/areas$area_km2[1]
+
+save.dir <- paste0("results/", sp, "/sst/")
+dir_create(save.dir)
+
+write.csv(areas, paste0(save.dir, sp, "_sstarea.csv"), row.names = F)

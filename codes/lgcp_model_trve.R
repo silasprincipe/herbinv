@@ -3,7 +3,7 @@
 
 ## Barrier Model under the Log-Gaussian Cox Process framework ##
 
-## Species: Lytechinus variegatus
+## Species: Tripneustes ventricosus
 
 # We run the model for each species separately. That way we can optimize the
 # process accordingly.
@@ -18,13 +18,20 @@ library(inlabru)
 # Spatial data
 library(raster)
 library(rgeos)
-library(gstat)
 # Plotting and utilities
 library(ggplot2)
+library(patchwork)
 library(fs)
+
 # Settings
 set.seed(2932) # Replicability of sampling
 spatt <- theme_classic()+theme(axis.line = element_blank()) # Theme for better ploting
+# Integration strategy (change here for "eb" for a fast approximation)
+intest <- "auto"
+# Number of samples to calculate posteriors (decrease to a fast approx.)
+nsamp <- 1000
+# RGDAL: avoid saving rasters with auxiliary files
+rgdal::setCPLConfigOption("GDAL_PAM_ENABLED", "FALSE")
 
 
 
@@ -32,27 +39,32 @@ spatt <- theme_classic()+theme(axis.line = element_blank()) # Theme for better p
 # These are prepared in the code lgcp_prepare_data.R
 list2env(readRDS('data/lgcp_data.rds'),globalenv())
 
+# Load environmental layers
 env <- stack(list.files("data/env/ready_layers", pattern = "_cur", full.names = T))
 r12 <- stack(list.files("data/env/ready_layers", pattern = "_r12", full.names = T))
 r24 <- stack(list.files("data/env/ready_layers", pattern = "_r24", full.names = T))
 r37 <- stack(list.files("data/env/ready_layers", pattern = "_r37", full.names = T))
 
-names(env) <- c("chl", "coldm", "ph", "sal", "sst", "warmm")
+# Include the distance to coast layer
+env <- stack(env, raster("data/env/ready_layers/distcoast.tif"))
+r12[[8]] <- r24[[8]] <- r37[[8]] <- env[[8]]
+
+# Change names
+names(env) <- c("chl", "coldm", "ph", "pho", "sal", "sst", "warmm", "dist")
 names(r12) <- names(r24) <- names(r37) <- names(env)
 
 # Load species data
 species <- "trve"
 
-pts <- read.csv(paste0("data/", species, "/", species, "_cell.csv"))[,1:2]
-pts <- SpatialPoints(data.frame(x = pts[,1], y = pts[,2]), 
-                     proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs"))
-
-# Reproject species data to the Equal Area Lambers projection
+pts <- read.csv(paste0("data/", species, "/", species, "_filt.csv"))
 proj <- "+proj=laea +lat_0=0 +lon_0=-70 +x_0=0 +y_0=0 +datum=WGS84 +units=km +no_defs"
-pts <- spTransform(pts, CRS(proj))
+pts <- SpatialPoints(pts, proj4string = CRS(proj))
 
 # Plot INLA mesh
 ggplot()+gg(mesh)+coord_fixed()+spatt;mesh$n
+
+# Get integration points
+ips <- ipoints(starea, mesh)
 
 
 
@@ -96,8 +108,8 @@ poly.barrier <- inla.barrier.polygon(mesh, barrier.triangles)
 # Matérn models ----
 # Get range and sigma
 size <- diff(bbox(starea)[1,])
-range0 <- as.numeric(round(size/5))
-sigma <- 0.5
+range0 <- as.numeric(round(size/10))
+sigma <- 0.1
 
 # Stationary model for comparison (if wanted)
 # spde <- inla.spde2.pcmatern(mesh,
@@ -107,13 +119,13 @@ sigma <- 0.5
 # Barrier model
 b.model <- inla.barrier.pcmatern(mesh,
                                  barrier.triangles = barrier.triangles,
-                                 prior.range = c(range0, 0.1),
+                                 prior.range = c(range0, 0.5),
                                  prior.sigma = c(sigma, 0.01))
 
 source("functions/barrier_model_plot.R")
 # par(mfrow = c(1,2), mar = c(5, 5, 4, 5) + 0.1)
 plot.bmodel(pts@coords[10,1:2], mesh = mesh, spde = b.model,
-            areapol = poly.barrier, crs = CRS(proj), range = range0, msd = 3)
+            areapol = poly.barrier, crs = CRS(proj), range = range0, msd = sigma)
 # To plot the stationary version:
 # plot.bmodel(pts@coords[10,1:2], mesh = mesh, spde = spde,
 #             areapol = poly.barrier, spmode = T, range = range0)
@@ -123,94 +135,93 @@ plot.bmodel(pts@coords[10,1:2], mesh = mesh, spde = b.model,
 # Create models formulas ----
 
 # Creates 1D spde for modeling temperature as a non-linear response
-# Two models are created - one in the range of SST and Coldest Month
-# and another in the range of Warmest Month
 
-# Get values
-min.sst <- data.frame(current = minValue(env[[4:6]]),
-                      r12 = minValue(r12[[4:6]]),
-                      r24 = minValue(r24[[4:6]]),
-                      r37 = minValue(r37[[4:6]]))
+# Get values for reference
+min.sst <- data.frame(current = minValue(env[[c("sst", "coldm", "warmm")]]),
+                      r12 = minValue(r12[[c("sst", "coldm", "warmm")]]),
+                      r24 = minValue(r24[[c("sst", "coldm", "warmm")]]),
+                      r37 = minValue(r37[[c("sst", "coldm", "warmm")]]))
 round(apply(min.sst, 1, min), 2)
 
-max.sst <- data.frame(current = maxValue(env[[4:6]]),
-                      r12 = maxValue(r12[[4:6]]),
-                      r24 = maxValue(r24[[4:6]]),
-                      r37 = maxValue(r37[[4:6]]))
+max.sst <- data.frame(current = maxValue(env[[c("sst", "coldm", "warmm")]]),
+                      r12 = maxValue(r12[[c("sst", "coldm", "warmm")]]),
+                      r24 = maxValue(r24[[c("sst", "coldm", "warmm")]]),
+                      r37 = maxValue(r37[[c("sst", "coldm", "warmm")]]))
 round(apply(max.sst, 1, max), 2)
 
-# SST and Coldest Month
-knots <- seq(-2.6, 1.6, length = 25)
-d1mesh <- inla.mesh.1d(knots, interval = c(-2.6, 1.6), degree = 2)
+# SST
+# Leave an "outer bound" of ~0.5 unit for each side
+knots.st <- seq(-3, 2, length = 30)
+d1mesh.st <- inla.mesh.1d(knots.st, degree = 2,
+                          boundary = "free")
 
-d1spde <- inla.spde2.pcmatern(d1mesh,
-                              prior.range = c(3.2, NA),
-                              prior.sigma = c(1, 0.1),
+d1spde.st <- inla.spde2.pcmatern(d1mesh.st,
+                              prior.range = c(diff(c(-3, 2)), NA),
+                              prior.sigma = c(0.5, 0.5),
                               constr = T)
+
+# Coldest Month can use the same as SST
 
 # Warmest Month
-knots.wm <- seq(-3.5, 1.9, length = 25)
-d1mesh.wm <- inla.mesh.1d(knots.wm, interval = c(-3.5, 1.9), degree = 2)
+knots.wm <- seq(-4, 2.5, length = 30)
+d1mesh.wm <- inla.mesh.1d(knots.wm, degree = 2,
+                          boundary = "free")
 
 d1spde.wm <- inla.spde2.pcmatern(d1mesh.wm,
-                              prior.range = c(3.8, NA),
-                              prior.sigma = c(1, 0.1),
+                              prior.range = c(diff(c(-4, 2.5)), NA),
+                              prior.sigma = c(0.5, 0.5),
                               constr = T)
+
 
 
 ##### Write formulas ----
 
-# We will test 4 different base models:
-# salinity + temperature --> at least those two variables should affect the dist.
-# sal + temp + pH --> this model considers acidification
-# sal + temp + chl --> this model considers productivity/light
-# sal + temp + pH + chl --> full model.
+# We will test 3 different model.
+# All of them contains at least temperature + salinity + distance from coast,
+# what we call "base components"
+# The base components also include the spatial component (SPDE)
+# base components + pH --> this model considers acidification
+# base components + chl-a + phosphate --> this model considers productivity/light
+# base components + pH + chlorophyll-a + phosphate --> full model.
 
 # We also have three different variables representing sea temperature. To chose
 # which one is most suitable for the species distribution model, we run the most
-# basic model (sal + temp) with each one and evaluate the response, summary, WAIC,
+# basic model (base components) with each one and evaluate the response, summary, WAIC,
 # and judge which one to use.
 # mean SST
 # mean temperature of the Warmest Month
 # mean temperature of the Coldest Month
 
-# Finally, the models [with the selected temperature component] will be tested
-# with the inclusion of a Spatial component
-# (an SPDE) considering a barrier model. This yelds a total of 10 models.
+# This yields a total of 6 testable models
 
 forms <- list()
 
-base.f <- coordinates ~ Intercept(1) + sal(env.e, model = "linear")
+base.f <- coordinates ~ 
+    Intercept(1, mean.linear = log(length(pts)/gArea(starea)), prec.linear = 1) + 
+    sal(env.e, model = "linear", mean.linear = 0, prec.linear = 1) +
+    dist(env.e, model = "linear", mean.linear = 0, prec.linear = 1) +
+    spatial(coordinates, model = b.model, mapper = bru_mapper(mesh))
         
-forms[[1]] <- update(base.f, ~ . + sst(env.e, model = d1spde,
-                                       mapper = bru_mapper(d1mesh, indexed = T)))
+forms[[1]] <- update(base.f, ~ . + sst(env.e, model = d1spde.st))
 
-forms[[2]] <- update(base.f, ~ . + coldm(env.e, model = d1spde,
-                                         mapper = bru_mapper(d1mesh, indexed = T)))
+forms[[2]] <- update(base.f, ~ . + coldm(env.e, model = d1spde.st))
 
-forms[[3]] <- update(base.f, ~ . + warmm(env.e, model = d1spde.wm,
-                                         mapper = bru_mapper(d1mesh.wm, indexed = T)))
+forms[[3]] <- update(base.f, ~ . + warmm(env.e, model = d1spde.wm))
 
-# After judgement, for this species we chose: COLDEST MONTH
-forms[[4]] <- update(forms[[2]], ~ . + ph(env.e, model = "linear"))
+# After judgement, for this species we chose: mean of coldest month
+chosen.bm <- forms[[2]]
 
-forms[[5]] <- update(forms[[2]], ~ . + chl(env.e, model = "linear"))
+forms[[4]] <- update(chosen.bm, ~ . +
+                         ph(env.e, model = "linear", mean.linear = 0, prec.linear = 1))
 
-forms[[6]] <- update(forms[[2]], ~ . + ph(env.e, model = "linear") 
-                     + chl(env.e, model = "linear"))
+forms[[5]] <- update(chosen.bm, ~ . +
+                         chl(env.e, model = "linear", mean.linear = 0, prec.linear = 1) +
+                         pho(env.e, model = "linear", mean.linear = 0, prec.linear = 1))
 
-# Include models with SPDE
-forms[[7]] <- update(forms[[2]], ~ . + spatial(coordinates, model = b.model,
-                                               mapper = bru_mapper(mesh)))
-
-forms[[8]] <- update(forms[[4]], ~ . + spatial(coordinates, model = b.model,
-                                               mapper = bru_mapper(mesh)))
-
-forms[[9]] <- update(forms[[5]], ~ . + spatial(coordinates, model = b.model,
-                                               mapper = bru_mapper(mesh)))
-
-forms[[10]] <- update(forms[[6]], ~ . + spatial(coordinates, model = b.model,
-                                               mapper = bru_mapper(mesh)))
+forms[[6]] <- update(chosen.bm, ~ . +
+                         ph(env.e, model = "linear", mean.linear = 0, prec.linear = 1) +
+                         chl(env.e, model = "linear", mean.linear = 0, prec.linear = 1) +
+                         pho(env.e, model = "linear", mean.linear = 0, prec.linear = 1))
 
 
 
@@ -218,8 +229,8 @@ forms[[10]] <- update(forms[[6]], ~ . + spatial(coordinates, model = b.model,
 # Initiate a list to hold models
 m <- list()
 
-# Creates a data.frame to hold WAIC, DIC and CPO (summary) results
-m.metrics <- data.frame(waic = rep(NA, length(forms)), dic = NA)
+# Creates a data.frame to hold WAIC and DIC results
+m.metrics <- data.frame(waic = rep(NA, 6), dic = NA)
 m.lambda <- list()
 
 # Run models in loop
@@ -230,8 +241,7 @@ for (i in 4:length(forms)) {
         
         m[[i]] <- lgcp(forms[[i]], pts,
                        ips = ips,
-                       #domain = list(coordinates = mesh),
-                       options = list(control.inla = list(int.strategy = "auto",
+                       options = list(control.inla = list(int.strategy = intest,
                                                           strategy = "simplified.laplace"),
                                       inla.mode = "classic"
                                       # For verbosity, uncoment those lines:
@@ -263,42 +273,74 @@ for (i in 4:length(forms)) {
 
 # Plot effects (change numbers according to model)
 source("functions/plot_inla.R")
-plot.random(m[[5]])
-plot.post(m[[5]])
+plot.random(m[[4]])
+plot.post(m[[4]])
 
 # Get summary
-summary(m[[5]])
+summary(m[[4]])
 
-# Plot spatial effect (only for the ones with a spatial component!)
-plot.spatial(m[[9]], mesh)
+# Plot spatial effect
+plot.spatial(m[[4]], mesh)
 
 # Compare models
-deltaIC(m[[2]], m[[4]], m[[5]], m[[6]],
-        m[[7]], m[[8]], m[[9]], m[[10]], criterion = "WAIC")
-# Now disconsidering the SPDE
-deltaIC(m[[1]], m[[4]], m[[5]], m[[6]], criterion = "WAIC")
+# Just for when chosing between the three SST components
+#deltaIC(m[[1]], m[[2]], m[[3]], criterion = "WAIC")
+
+deltaIC(m[[4]], m[[5]], m[[6]], criterion = "WAIC")
+
 
 # Predict each component effect spatially
 # Get a base PixelsDataFrame with same reso as env layers
 df <- as(env$ph, "SpatialPixelsDataFrame")
 df <- df[,-1]
 
-pred.comp <- predict(m[[5]], data = df,
+pred.comp <- predict(m[[6]], data = df,
                  formula = ~ list(
-                         # Change those according to mode and
-                         # combinations
+                         ### Change those according to mode and combinations
+                         # Individual components
                          coldm = coldm,
                          sal = sal,
+                         dist = dist,
+                         ph = ph,
                          chl = chl,
-                         int = exp(coldm + sal + chl + Intercept)
+                         pho = pho,
+                         spatial = spatial,
+                         # Integrated (exp(lambda))
+                         int = exp(coldm + sal + ph + chl + pho + dist + spatial + Intercept),
+                         # Linear predictor scale
+                         lin = coldm + sal + ph + chl + pho + dist + spatial + Intercept,
+                         # Contrast models (excluding spatial component)
+                         int_cont = exp(coldm + sal + ph + chl + pho + dist + Intercept),
+                         lin_cont = coldm + sal + ph + chl + pho + dist + Intercept
                  ))
 
+# Get a better color palete for ploting:
+pc <- function(component = NULL, var = "mean", pred.ob = pred.comp){
+  sca <- function(...){
+    scale_fill_gradientn(
+      colours = rev(c("#A84C00", "#D97D27", "#F5BD44", "#FFD561", "#FFF291",
+                      "#FFFFBF", "#E0F3F8", "#ABD9E9", "#74ADD1", "#4575B4", "#313695")),
+      limits = range(...))
+  }
+  
+  if (is.null(component)) {
+    cc <- sca(pred.ob[[var]])
+  } else {
+    cc <- sca(pred.ob[[component]][[var]])
+  }
+  
+  return(cc)
+}
+
+# Plot components
 ggplot()+
-        gg(pred.comp$int)+ # change here according to layer
+        gg(pred.comp$int_cont, aes(fill = mean)) + # change here according to layer
+        pc("int_cont", "mean") +
+        #gg(pts, size = .8, alpha = .4) +
         coord_equal()
 
-# We select the model 4 as the best one, considering WAIC and exploratory analysis
-sel.model <- c(5, 9) # we also project the one with the spatial component
+# We select the model 6 as the best one, considering WAIC and exploratory analysis
+sel.model <- 6
 
 
 
@@ -312,103 +354,104 @@ dir_create(dir)
 
 save.rast <- function(x, model){
         r <- as(pred.comp[[x]], "RasterStack")
-        writeRaster(r, paste0(dir, "/", species, "_m", model, "_",
-                              x, "_", names(r), "_effect.tif"),
-                    bylayer = T, overwrite = T)
+        for (i in 1:nlayers(r)) {
+          writeRaster(r[[i]], paste0(dir, "/", species, "_m", model, "_",
+                                x, "_", names(r)[i], "_effect.tif"),
+                      overwrite = T, format="GTiff")
+        }
         return(paste(x, "saved."))
 }
 
-# Predict model without spatial component
-pred.comp <- predict(m[[sel.model[1]]], data = df,
+# Predict model components
+pred.comp <- predict(m[[sel.model]], data = df,
                      formula = ~ list(
-                             coldm = coldm,
-                             sal = sal,
-                             chl = chl,
-                             combl = coldm + sal + chl + Intercept,
-                             combl_exp = exp(coldm + sal + chl + Intercept)),
-                     n.samples = 1000, seed = 2932)
+                       # Individual components
+                       coldm = coldm,
+                       sal = sal,
+                       dist = dist,
+                       ph = ph,
+                       chl = chl,
+                       pho = pho,
+                       spatial = spatial),
+                     n.samples = nsamp, seed = 2932)
 
 # save
-sapply(names(pred.comp), save.rast, model = sel.model[1])
-
-# Predict model with spatial component
-pred.comp <- predict(m[[sel.model[2]]], data = df,
-                     formula = ~ list(
-                             coldm = coldm,
-                             sal = sal,
-                             chl = chl,
-                             spatial = spatial,
-                             combl = coldm + sal + chl + Intercept,
-                             combl_exp = exp(coldm + sal + chl + Intercept)),
-                     n.samples = 1000, seed = 2932)
-
-# save
-sapply(names(pred.comp), save.rast, model = sel.model[2])
+sapply(names(pred.comp), save.rast, model = sel.model)
 
 
 
 # Predictions ----
-# inlabru gets the environmental layer from the environment
+# inlabru gets the environmental layer from the R environment
 # thus, to predict to different scenarios we need to change the environmental
 # layers object (i.e. 'env.e') to the new object for which we want the prediction
 
-# we do the same for the model without and with the SPDE effect
-for (i in sel.model) {
-    # Get formula
-    pred.f <- as.formula(paste0(
-        "~ exp(",
-        paste(if (is.null(names(
-            m[[i]]$summary.random))) {
-            m[[i]]$names.fixed
-        } else{
-            c(m[[i]]$names.fixed,
-              names(m[[i]]$summary.random))
-        }
-        , collapse = "+"), ")"
-    ))
+# We generate 2 predictions: 
+# 1 with the spatial component and 1 without it (contrast)
+
+dir <- paste("results", species, "predictions", sep = "/")
+dir_create(dir)
+
+for (i in 1:2) {
+    
+   # Get formula
+    pred.f <- list(
+      as.formula("~exp(coldm + sal + dist + spatial + ph + chl + pho + Intercept)"),
+      as.formula("~exp(coldm + sal + dist + ph + chl + pho + Intercept)")
+    )[[i]]
+    
+    # Save name
+    snam <- paste0("_m", sel.model, "_", c("int", "cont")[i])
+    
+    cat("Running", snam, "\n")
+    print(pred.f)
     
     # Predict to current scenario
+    cat("Predicting for current scenario... \n")
     env.e <- as(env, "SpatialPixelsDataFrame")
     
-    pred.cur <- predict(m[[i]],
+    pred.cur <- predict(m[[sel.model]],
                         data = df,
                         formula = pred.f,
-                        n.samples = 1000, seed = 2932)
+                        n.samples = nsamp, seed = 2932)
     ggplot() +
-        gg(pred.cur, aes(fill = mean)) + coord_equal()
+        gg(pred.cur, aes(fill = mean)) + pc(pred.ob = pred.cur) + coord_equal()
     
     # Predict to SSP 1
+    cat("Predicting for SSP1 scenario... \n")
     env.e <- as(r12, "SpatialPixelsDataFrame")
     
-    pred.r12 <- predict(m[[i]],
+    pred.r12 <- predict(m[[sel.model]],
                         data = df,
                         formula = pred.f,
-                        n.samples = 1000, seed = 2932)
+                        n.samples = nsamp, seed = 2932)
     ggplot() +
         gg(pred.r12, aes(fill = mean)) + coord_equal()
     
     # Predict to SSP 2
+    cat("Predicting for SSP2 scenario... \n")
     env.e <- as(r24, "SpatialPixelsDataFrame")
     
-    pred.r24 <- predict(m[[i]],
+    pred.r24 <- predict(m[[sel.model]],
                         data = df,
                         formula = pred.f,
-                        n.samples = 1000, seed = 2932)
+                        n.samples = nsamp, seed = 2932)
     ggplot() +
-        gg(pred.r24, aes(fill = mean)) + coord_equal()
+        gg(pred.r24, aes(fill = mean)) + pc(pred.ob = pred.r24) + coord_equal()
     
     # Predict to SSP 3
+    cat("Predicting for SSP3 scenario... \n")
     env.e <- as(r37, "SpatialPixelsDataFrame")
     
-    pred.r37 <- predict(m[[i]],
+    pred.r37 <- predict(m[[sel.model]],
                         data = df,
                         formula = pred.f,
-                        n.samples = 1000, seed = 2932)
+                        n.samples = nsamp, seed = 2932)
     ggplot() +
         gg(pred.r37, aes(fill = mean)) + coord_equal()
     
     
     # Convert all to raster (easier handling)
+    cat("Saving files... \n")
     pred.cur <- as(pred.cur, "RasterStack")
     pred.r12 <- as(pred.r12, "RasterStack")
     pred.r24 <- as(pred.r24, "RasterStack")
@@ -426,26 +469,162 @@ for (i in sel.model) {
     dir <- paste("results", species, "predictions", sep = "/")
     dir_create(dir)
     
-    writeRaster(pred.cur, paste0(dir, "/", species, "_",
-                                 names(pred.cur), "_m", i, "_current.tif"),
-                bylayer = T, overwrite = T)
-    writeRaster(pred.r12, paste0(dir, "/", species, "_",
-                                 names(pred.r12), "_m", i, "_ssp1.tif"),
-                bylayer = T, overwrite = T)
-    writeRaster(pred.r24, paste0(dir, "/", species, "_",
-                                 names(pred.r24), "_m", i, "_ssp2.tif"),
-                bylayer = T, overwrite = T)
-    writeRaster(pred.r37, paste0(dir, "/", species, "_",
-                                 names(pred.r37), "_m", i, "_ssp3.tif"),
-                bylayer = T, overwrite = T)
+    # Raster was not being saved by layers for some reason
+    # Thus we just use a small function to get the work done
+    save.rast <- function(x, fnames){
+      for (z in 1:nlayers(x)) {
+        writeRaster(x[[z]], fnames[z], overwrite = T)
+      }
+      return(invisible(NULL))
+    }
+    
+    save.rast(pred.cur, paste0(dir, "/", species, "_",
+                               names(pred.cur), snam,
+                               "_current.tif"))
+    
+    save.rast(pred.r12, paste0(dir, "/", species, "_",
+                               names(pred.r12), snam,
+                               "_ssp1.tif"))
+    
+    save.rast(pred.r24, paste0(dir, "/", species, "_",
+                               names(pred.r24), snam,
+                               "_ssp2.tif"))
+    
+    save.rast(pred.r37, paste0(dir, "/", species, "_",
+                               names(pred.r37), snam,
+                               "_ssp3.tif"))
+    
+    cat("Done! \n")
 }
 
 
 
-# Save metrics ----
+# Save metrics and summaries ----
 dir <- paste0("results/", species)
 write.csv(m.metrics, paste0(dir, "/", species, "_model_metrics.csv"),
           row.names = F)
+
+# Extract summaries of the chosen model
+model.summ <- m[[sel.model]]$summary.fixed
+
+sigma.mar <- inla.tmarginal(function(x) exp(x),
+                            m[[sel.model]]$marginals.hyperpar[[1]])
+sigma.mar <- inla.zmarginal(sigma.mar)
+
+range.mar <- inla.tmarginal(function(x) exp(x),
+                            m[[sel.model]]$marginals.hyperpar[[2]])
+range.mar <- inla.zmarginal(range.mar)
+
+sst.sd.mar <- inla.zmarginal(m[[sel.model]]$marginals.hyperpar[[3]])
+
+hyper <- rbind(cbind(as.data.frame(sigma.mar), mode = NA, kld = NA),
+               cbind(as.data.frame(range.mar), mode = NA, kld = NA),
+               cbind(as.data.frame(sst.sd.mar), mode = NA, kld = NA))
+row.names(hyper) <- c("sigma", "range", "temp_sd")
+hyper <- hyper[,-c(4, 6)]
+names(hyper) <- names(model.summ)
+
+model.summ <- rbind(model.summ, hyper)
+
+# Save summaries
+write.csv(model.summ, paste0(dir, "/", species, "_model_summary.csv"))
+
+# Get plots of probability density
+plots <- list()
+
+# x label titles
+xl <- c("Intercept", "Salinity", "Distance from coast", 
+        "pH", "log(Chl-a)", "Phosphate")
+
+for (i in 1:length(m[[sel.model]]$names.fixed)) {
+  plots[[i]] <- plot(m[[sel.model]], m[[sel.model]]$names.fixed[i])+
+    ylab(ifelse(i == 1, "Density", ""))+xlab(xl[i])+theme_classic()
+}
+
+pl <- plots[[1]] + plots[[2]] + plots[[3]] + plots[[4]] + plots[[5]] + plots[[6]]
+ggsave(paste0(dir, "/effects_density.jpg"), pl)
+
+# Get plots of probability density for the SPDE parameters
+sigp <- ggplot(data.frame(
+  inla.smarginal(
+    inla.tmarginal(function(x) exp(x),
+                   m[[sel.model]]$marginals.hyperpar$`Theta1 for spatial`))),
+  aes(x, y)) + geom_line() + xlab("Sigma") + ylab("Density") + theme_classic()
+
+rangep <- ggplot(data.frame(
+  inla.smarginal(
+    inla.tmarginal(function(x) exp(x),
+                   m[[sel.model]]$marginals.hyperpar$`Theta2 for spatial`))),
+  aes(x, y)) + geom_line() + xlab("Range") + ylab("") + theme_classic()
+
+sstp <- ggplot(data.frame(
+  inla.smarginal(m[[sel.model]]$marginals.hyperpar[[3]])),
+  aes(x, y)) + geom_line() + xlab("SD(SST)") + ylab("") + theme_classic()
+
+sigp + rangep + sstp
+ggsave(paste0(dir, "/hyperpar_density.jpg"), height = 3)
+
+
+
+# Save SST effect plot ----
+# Predict to a range of values
+pred.sst <- predict(m[[sel.model]],
+                    data = data.frame(env.e = seq(-2.5, 1.4, by = 0.05)),
+                    formula = ~ coldm_eval(env.e),
+                    n.samples = nsamp)
+
+# Plot with scaled axis
+ggplot(pred.sst) +
+  geom_line(aes(env.e, mean)) +
+  geom_ribbon(aes(env.e,
+                  ymin = q0.025,
+                  ymax = q0.975),
+              alpha = 0.2) +
+  geom_ribbon(aes(env.e,
+                  ymin = mean - 1 * sd,
+                  ymax = mean + 1 * sd),
+              alpha = 0.2) +
+  geom_hline(yintercept = 0, linetype = 2, color = "grey50")+
+  scale_x_continuous(breaks = seq(-2.5, 1.4, by = 0.3),
+                     expand = c(0,0.1)) +
+  ylab("Mean effect") + xlab("Scaled mean temperature of the coldest month (°C)") +
+  theme_classic()
+
+# Save
+ggsave(paste0(dir, "/sst_effect_scaled.jpg"), height = 5, width = 8)
+
+# Get original values to back-scale values
+originals <- stack(c("data/env/crop_layers/BO21_tempmean_ss.tif",
+                     "data/env/bioclim_layers/mtemp_coldm_current_hr.tif",
+                     "data/env/bioclim_layers/mtemp_warmm_current_hr.tif"))
+
+originals.mean <- cellStats(originals, "mean")
+originals.sd <- cellStats(originals, "sd")
+
+# Get unscaled values
+original.vals <- (seq(-2.5, 1.4, by = 0.3) * originals.sd[2]) + originals.mean[2]
+original.vals <- round(original.vals, 1)
+
+# Plot
+ggplot(pred.sst) +
+  geom_line(aes(env.e, mean), size = 1) +
+  geom_ribbon(aes(env.e,
+                  ymin = q0.025,
+                  ymax = q0.975),
+              alpha = 0.2) +
+  geom_ribbon(aes(env.e,
+                  ymin = mean - 1 * sd,
+                  ymax = mean + 1 * sd),
+              alpha = 0.2) +
+  geom_hline(yintercept = 0, linetype = 2, color = "grey50")+
+  scale_x_continuous(breaks = seq(-2.5, 1.4, by = 0.3),
+                     labels = original.vals,
+                     expand = c(0,0.1)) +
+  ylab("Mean effect") + xlab("Mean temperature of the coldest month (°C)") +
+  theme_classic()
+
+# Save
+ggsave(paste0(dir, "/sst_effect_original.jpg"), height = 5, width = 8)
 
 
 

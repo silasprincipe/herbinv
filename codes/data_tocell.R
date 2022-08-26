@@ -1,9 +1,12 @@
 #### Modelling of coral reef herbivorous invertebrates ####
 ## Silas C. Principe - silasprincipe@yahoo.com.br - 2021
 
-### Sea-urchins data conversion to 1 per cell ###
+### Sea-urchins data conversion to 1 per cell or filtered###
 # This file includes both the regular version (0.083 resolution)
 # and the NOAA version (0.25 resolution). See below.
+
+# This file is also used to produce a filtered version which
+# removes duplicates with a 5km threshold in a projected raster
 
 # Load packages ----
 library(raster)
@@ -111,6 +114,42 @@ for (i in 1:3) {
                                          "/", sp.codes[i],
                                          "_cell_noaa.csv"),
                   row.names = F)
+}
+
+
+
+# Filtered dataset (5 km  threshold) ----
+
+# Load environmental layers (already prepared using bath layer as mask)
+base <- raster("data/env/crop_layers/BO21_tempmean_ss.tif")
+
+# Reproject base raster
+proj <- "+proj=laea +lat_0=0 +lon_0=-70 +x_0=0 +y_0=0 +datum=WGS84 +units=km +no_defs"
+base <- projectRaster(base, crs = proj)
+
+# Runs in loop for three species
+for (i in 1:3) {
+  
+  # Open and convert to spatial points
+  pts <- read.csv(paste0("data/", sp.codes[i], "/", sp.codes[i], "_final.csv"))[,2:3]
+  pts <- SpatialPoints(data.frame(x = pts[,1], y = pts[,2]), 
+                       proj4string = CRS("+proj=longlat +datum=WGS84 +no_defs"))
+  
+  # Reproject
+  pts <- spTransform(pts, CRS(proj))
+  
+  # Remove those out of the study area
+  pts <- pts[!is.na(extract(base, pts))]
+  
+  # Remove duplicates
+  pts.dup <- remove.duplicates(pts, zero = 5)
+  
+  cat(sp.codes[i], "=", length(pts.dup), "points \n")
+  
+  # Save csv
+  write.csv(as.data.frame(pts.dup), 
+            paste0("data/", sp.codes[i], "/", sp.codes[i], "_filt.csv"),
+            row.names = F)
 }
 
 #END of code

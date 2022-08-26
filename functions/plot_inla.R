@@ -9,7 +9,11 @@ plot.random <- function(model, CI=T, adpt = T, disable.par = F) {
                         par(mfrow = c(1,(lr-1)))
                 } else {par(mfrow = c(2,3))}   
         }
-        for (i in 1:(lr-1)) {
+        
+        st <- ifelse(names(model$summary.random)[1] == "spatial",
+                     2, 1:(lr-1))
+        
+        for (i in st) {
                 
                 nam <- gsub("\\, n = [[:alnum:]][[:alnum:]]", "",
                             gsub("[\\(\\)]", "",
