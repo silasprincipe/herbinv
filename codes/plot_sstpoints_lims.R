@@ -109,16 +109,16 @@ names(supp.labs) <- c("eclu", "lyva", "trve")
 
 # Plot
 ggplot(data) + 
-  geom_hline(yintercept = 0, size = .5, color = "grey70")+
+  geom_hline(yintercept = 0, size = .5, color = "grey60")+
   geom_hline(data = lims, aes(yintercept = upper_l - optimum),
-             size = .5, color = "grey70", linetype = 2)+
+             size = .5, color = "grey60", linetype = 2)+
   ggdist::stat_halfeye(
     aes(x = scenario, y = sst),
     adjust = .5,
     width = .3,
     .width = 0,
     justification = -.5,
-    fill = "grey80",
+    fill = "grey70",
     point_colour = NA
   ) +
   geom_point(
@@ -145,12 +145,12 @@ ggplot(data) +
             aes(label = labels),
             x = "current", y = -0.2, parse = T, vjust = -5,
             size = 3, hjust = "right",
-            color = "grey70")+
+            color = "grey60")+
   geom_text(data = lims,
             aes(label = labels_b, y = (delta_up - 0.2)),
             x = "current", parse = T, vjust = -5.9,
             size = 3, hjust = "right",
-            color = "grey70")+
+            color = "grey60")+
   theme_bw()+
   ylab(expression("Difference of temperature (SST -"~T[opt]~")")) +
   xlab("Scenario")+

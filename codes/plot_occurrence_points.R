@@ -109,9 +109,9 @@ int <- theme_classic()+
         plot.margin = margin(0.5, 0.5, 0, 0, "pt")
   )
 
-sca <- scale_fill_stepsn(breaks = seq(8,32,2),
-                         limits = c(8, 32),
-                         colors = rev(RColorBrewer::brewer.pal(11, "RdYlBu")),
+sca <- scale_fill_stepsn(breaks = seq(8,30,2),
+                         limits = c(8, 30),
+                         colors = rev(RColorBrewer::brewer.pal(10, "RdYlBu")),
                          na.value = NA,
                          guide = step.guide)
 
