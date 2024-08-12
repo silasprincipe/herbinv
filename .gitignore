@@ -83,3 +83,6 @@ rsconnect/
 /supplement
 /figures
 /results/*
+
+docs_raw/
+others/

@@ -4,6 +4,7 @@
 # Plot of SST limits - all species
 
 # Load needed packages ----
+set.seed(2020)
 library(ggplot2)
 library(ggdist)
 library(patchwork)
